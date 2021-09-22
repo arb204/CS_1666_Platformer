@@ -4,15 +4,15 @@
 
 ## Our Team:  
 **Networking Advanced Topic**  
-    Andrew Ashley (Pitt ID: --, Github: --)
+    Andrew Ashley (Pitt ID: ata33, Github: andrew-ashley10)
     Alvyn Berg (Pitt ID: apb62, Github: Alvynskio)
     Austin Brothers (Pitt ID: arb204, Github: arb204)
-    Evan Moran (Pitt ID: --, Github: --)
+    Evan Moran (Pitt ID: ecm61, Github: Evmo98)
     Greg Sack (Pitt ID: grs76, Github: gregdrew12)
 **Rigidbody Physics Advanced Topic**  
     Bryce Anderson (Pitt ID: baa104, Github: baa104)
     Joshua Mateer (Pitt ID: jcm155, Github: jcm155)
-    Jake Sweeney (Pitt ID: --, Github: --)
+    Jake Sweeney (Pitt ID: jms608, Github: jsweeney12)
     Kira Tsvetkova (Pitt ID: mat253, Github: kiraghost)
 
 ## Game Description:  
