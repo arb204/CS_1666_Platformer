@@ -19,7 +19,15 @@
 We are creating a puzzle platformer inspired by the __Portal__ series of games. The gameplay will involve placing portals to traverse obstacles that aren't traversible via the normal platforming methods (running, jumping, dashing, etc.) The goal of each stage is simply to reach the exit gate/door, typically located at the right side of the screen.
 
 __Concept Art__  
-Put some concept art here.
+__Level Concept__\
+![alt text](https://github.com/andrew-ashley10/CS_1666_Platformer/blob/main/2021-09-10_13.37.14.png "Level 1")\
+__Main Character Animation__\
+![alt text](https://github.com/andrew-ashley10/CS_1666_Platformer/blob/main/gif-character-orange.gif "Character 1")\
+__Portal Animation__\
+![alt text](https://github.com/andrew-ashley10/CS_1666_Platformer/blob/main/gif-portal-blue.gif "Portal Animation")\
+__Concept Additional Character Animation__\
+![alt text](https://github.com/andrew-ashley10/CS_1666_Platformer/blob/main/walking.gif "Character 2")\
+
 
 ## Advanced Topics  
 **Networking**  
