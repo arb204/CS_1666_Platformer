@@ -56,7 +56,7 @@ The scope of the game will be 5 levels, each with a static camera where a single
 * Networking
     By the end of the semester, we want to have a fairly low-latency (<200ms) online multiplayer mode where both players can create and travel through portals in real time, where players do not appear to "teleport" (game lagging and correcting player positions). Players should be able to see the other player at all times and disconnects due to server errors should almost never happen.
 * Physics  
-    By the end of the semester, we want to have a robust physics system that allows for both rectangular and ellipsoid objects. We want to be simulating all physics for these rigidbodies, including weight, gravity, collisions, and friction. We also want these calaculations to not slow down the gamepay in any noticeable way regardless of how many ojects we have on screen (within reason of course)
+    By the end of the semester, we want to have a robust physics system that allows for both rectangular and ellipsoid objects. We want to be simulating all physics for these rigidbodies, including weight, gravity, collisions, and friction. We also want these calaculations to not slow down the gamepay in any noticeable way regardless of how many objects we have on screen (within reason of course)
 
 **Midterm Milestones**
 * Basic graphics (character models and level assets)  
