@@ -40,47 +40,47 @@ fn main() {
 	wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
 	wincan.clear();
 
-	wincan.copy(&andrew, None, None);
+	wincan.copy(&andrew, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 
-	wincan.copy(&kira, None, None);
+	wincan.copy(&kira, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 
-	wincan.copy(&josh, None, None);
+	wincan.copy(&josh, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 
-	wincan.copy(&alvyn, None, None);
+	wincan.copy(&alvyn, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 
-	wincan.copy(&greg, None, None);
+	wincan.copy(&greg, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 
-	wincan.copy(&jake, None, None);
+	wincan.copy(&jake, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 /*
-	wincan.copy(&bryce, None, None);
+	wincan.copy(&bryce, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 
-	wincan.copy(&austin, None, None);
+	wincan.copy(&austin, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));
 
-	wincan.copy(&evan, None, None);
+	wincan.copy(&evan, None, None).ok();
 	wincan.present();
 
 	thread::sleep(Duration::from_millis(1500));*/
