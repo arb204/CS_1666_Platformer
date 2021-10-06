@@ -34,7 +34,7 @@ fn main() {
 	let greg = texture_creator.load_texture("images/greg_credits.jpg").unwrap();
 	let jake = texture_creator.load_texture("images/jake_credits.jpeg").unwrap();
 	//let bryce = texture_creator.load_texture("images/bryce_credits.png").unwrap();
-	let austin = texture_creator.load_texture("images/Austin_Credits.png").unwrap();
+	let austin = texture_creator.load_texture("images/austin_credits.png").unwrap();
 	let evan = texture_creator.load_texture("images/evan_credits.png").unwrap();
 
 	wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
