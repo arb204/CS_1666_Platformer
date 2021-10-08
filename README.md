@@ -26,7 +26,7 @@ __Main Character Animation__\
 __Portal Animation__\
 ![alt text](https://github.com/andrew-ashley10/CS_1666_Platformer/blob/main/gif-portal-blue.gif "Portal Animation")\
 __Concept Additional Character Animation__\
-![alt text](https://github.com/andrew-ashley10/CS_1666_Platformer/blob/main/walking.gif "Character 2")\
+![alt text](https://github.com/andrew-ashley10/CS_1666_Platformer/blob/main/walking.gif "Character 2")
 
 
 ## Advanced Topics  
