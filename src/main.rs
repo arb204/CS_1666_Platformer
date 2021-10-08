@@ -27,15 +27,15 @@ fn main() {
 
 	let texture_creator = wincan.texture_creator();
 
-	let andrew = texture_creator.load_texture("images/andrew_credit_page.png").unwrap();
-	let kira = texture_creator.load_texture("images/kira_credit_page.jpg").unwrap();
-	let josh = texture_creator.load_texture("images/josh_credit_page.png").unwrap();
-	let alvyn = texture_creator.load_texture("images/alvyn_credit_page.png").unwrap();
-	let greg = texture_creator.load_texture("images/greg_credits.jpg").unwrap();
-	let jake = texture_creator.load_texture("images/jake_credits.jpeg").unwrap();
-	let bryce = texture_creator.load_texture("images/bryce_credits.png").unwrap();
-	let austin = texture_creator.load_texture("images/austin_credits.png").unwrap();
-	let evan = texture_creator.load_texture("images/evan_credits.png").unwrap();
+	let andrew = texture_creator.load_texture("assets/credits/andrew_credits.png").unwrap();
+	let kira = texture_creator.load_texture("assets/credits/kira_credits.jpg").unwrap();
+	let josh = texture_creator.load_texture("assets/credits/josh_credits.png").unwrap();
+	let alvyn = texture_creator.load_texture("assets/credits/alvyn_credits.png").unwrap();
+	let greg = texture_creator.load_texture("assets/credits/greg_credits.jpg").unwrap();
+	let jake = texture_creator.load_texture("assets/credits/jake_credits.jpeg").unwrap();
+	let bryce = texture_creator.load_texture("assets/credits/bryce_credits.png").unwrap();
+	let austin = texture_creator.load_texture("assets/credits/austin_credits.png").unwrap();
+	let evan = texture_creator.load_texture("assets/credits/evan_credits.png").unwrap();
 
 	wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
 	wincan.clear();
