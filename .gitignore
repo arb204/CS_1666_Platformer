@@ -1,2 +1,6 @@
 *.dll
-target
+.idea
+
+# Added by cargo
+
+/target
