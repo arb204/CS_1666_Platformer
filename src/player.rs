@@ -9,7 +9,7 @@ pub mod player {
     }
 
     impl Player<'_> {
-        fn new(_sheet: Texture, _physics: PhysicsController, _collider: RectCollider)
+        pub fn new(_sheet: Texture, _physics: PhysicsController, _collider: RectCollider)
             -> Player
         {
             Player {

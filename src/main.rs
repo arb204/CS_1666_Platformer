@@ -24,7 +24,7 @@ fn main() {
 	let wincan = wincan.build()
 		.map_err(|e| e.to_string())
 		.unwrap();
-	if current_scene == "mainmenu" {
+	if current_scene == "game" {
 		//main menu code goes here
 	}
 	if current_scene == "game" {

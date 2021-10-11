@@ -9,7 +9,7 @@ pub mod rect_collider {
     }
 
     impl RectCollider {
-        fn new(_x: f32, _y:f32, _width:f32, _height: f32, _rotation: f32, _can_move:bool)
+        pub fn new(_x: f32, _y:f32, _width:f32, _height: f32, _rotation: f32, _can_move:bool)
             -> RectCollider
         {
             RectCollider {
@@ -22,7 +22,7 @@ pub mod rect_collider {
             }
         }
 
-        fn has_collided_with(&self, other: RectCollider)
+        pub fn has_collided_with(&self, other: RectCollider)
             -> bool
         {
             self.x < other.x && self.x+self.width > other.x && self.y < other.y && self.y+self.height > other.y

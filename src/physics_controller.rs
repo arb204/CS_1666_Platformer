@@ -22,7 +22,7 @@ pub mod physics_controller {
     }
 
     impl PhysicsController {
-        fn new(_id: String, _x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32)
+        pub fn new(_id: String, _x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32)
             -> PhysicsController
         {
             PhysicsController {
@@ -48,7 +48,7 @@ pub mod physics_controller {
         }
 
         // debug: prints out a list of the controller's current state
-        fn debug(&mut self) {
+        pub fn debug(&mut self) {
             println!("Physics Controller'{}' status:", self.ID);
             println!("\tx: {}", self.x);
             println!("\ty: {}", self.y);
@@ -60,7 +60,7 @@ pub mod physics_controller {
         }
 
         // accelerate_left: accelerates the character to the left
-        fn accelerate_left(&mut self) {
+        pub fn accelerate_left(&mut self) {
             if self.speed > -self.MAX_SPEED {
                 self.speed -= self.ACCELERATION;
             }
@@ -70,7 +70,7 @@ pub mod physics_controller {
         }
 
         // accelerate_right: accelerates the character to the right
-        fn accelerate_right(&mut self) {
+        pub fn accelerate_right(&mut self) {
             if self.speed < self.MAX_SPEED {
                 self.speed += self.ACCELERATION;
             }
@@ -80,7 +80,7 @@ pub mod physics_controller {
         }
 
         // update: manage the character's state each frame
-        fn update(&mut self) {
+        pub fn update(&mut self) {
             //move the character if necessary
             self.x += self.speed;
             self.y += self.fall_speed;
@@ -116,7 +116,7 @@ pub mod physics_controller {
         }
 
         //jump: if we have jumps left, give ourselves a boost upwards. this is so we can support multiple jumps if we need
-        fn jump(&mut self) {
+        pub fn jump(&mut self) {
             // the time comparison here is to prevent jumps from occurring on successive frames, which would be frustrating to players
             //if SystemTime::now().duration_since(self.last_jump_time).ok().Some > 100 && self.jumps_used < self.max_jumps {
                 self.jumps_used += 1;
@@ -126,7 +126,7 @@ pub mod physics_controller {
         }
 
         //is_moving: returns true if our position was updated last frame, otherwise returns false
-        fn is_moving(&mut self) -> bool {
+        pub fn is_moving(&mut self) -> bool {
             self.speed != 0.0 && self.fall_speed != 0.0
         }
     }
