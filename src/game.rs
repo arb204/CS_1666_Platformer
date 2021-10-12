@@ -1,7 +1,7 @@
 use sdl2::render::WindowCanvas;
 use sdl2::image::LoadTexture;
 use std::time::Duration;
-
+use std::collections::HashSet;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::event::Event;
@@ -28,19 +28,34 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
         for event in core.event_pump.poll_iter() {
             match event {
                 Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'gameloop,
-                Event::KeyDown{keycode: Some(k), ..} => {
+                /*Event::KeyDown{keycode: Some(k), ..} => {
                     match k {
                         Keycode::W => player1.physics.jump(),
-                        Keycode::A => player1.physics.accelerate_left(), 
+                        Keycode::A => player1.physics.accelerate_left(),
                         Keycode::D => player1.physics.accelerate_right(),
                         _ => {},
                     }
-                }
+                } */
                 _ => {},
             }
         }
+        let keystate: HashSet<Keycode> = core.event_pump
+            .keyboard_state()
+            .pressed_scancodes()
+            .filter_map(Keycode::from_scancode)
+            .collect();
 
-        if (player1.physics.y() > 620.0 && player1.physics.fall_speed() > 0.0) {
+        if keystate.contains(&Keycode::A) {
+            player1.physics.accelerate_left();
+        }
+        if keystate.contains(&Keycode::D) {
+            player1.physics.accelerate_right();
+        }
+        if keystate.contains(&Keycode::W) {
+            player1.physics.jump();
+        }
+
+        if player1.physics.y() > 620.0 && player1.physics.fall_speed() > 0.0 {
             player1.physics.set_grounded();
             player1.physics.reset_jumps();
             player1.physics.set_y(player1.physics.y() - player1.physics.fall_speed());
