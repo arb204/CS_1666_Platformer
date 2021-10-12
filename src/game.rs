@@ -16,6 +16,8 @@ use crate::sdl_core::SDLCore;
 pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
     let texture_creator = core.wincan.texture_creator();
 
+    let frame_rate = 60;
+
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites.png").unwrap();
     let p1physcon = PhysicsController::new("player1".to_string(), 0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 7.0);
     let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, 0.0, true);
@@ -50,8 +52,11 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
         core.wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
         core.wincan.clear();
 
-        core.wincan.copy(&player1.sprite_sheet, Rect::new(0, 0, 100, 100), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100)).ok();
+        core.wincan.copy(&player1.sprite_sheet, Rect::new(100, 0, 100, 100), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100)).ok();
         core.wincan.present();
+
+        //lock the frame rate
+        thread::sleep(Duration::from_millis(1000/frame_rate));
     }
 
     // Out of game loop, return Ok
