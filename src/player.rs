@@ -3,9 +3,9 @@ pub mod player {
     use crate::physics_controller::physics_controller::PhysicsController;
     use crate::rect_collider::rect_collider::RectCollider;
     pub struct Player<'a> {
-        sprite_sheet: Texture<'a>,
-        physics: PhysicsController,
-        collider: RectCollider
+        pub sprite_sheet: Texture<'a>,
+        pub physics: PhysicsController,
+        pub collider: RectCollider
     }
 
     impl Player<'_> {

@@ -1,21 +1,21 @@
 pub mod physics_controller {
     use std::time::SystemTime;
     pub struct PhysicsController {
-        ID: String,
+        id: String,
         x: f32,
         y: f32,
         last_x: f32,
         last_y: f32,
         speed: f32,
-        MAX_SPEED: f32,
-        ACCELERATION: f32,
-        JUMP_SPEED: f32,
+        max_speed: f32,
+        acceleration: f32,
+        jump_speed: f32,
         jumps_used: i8,
         last_jump_time: SystemTime,
         max_jumps: i8,
-        STOP_SPEED: f32,
+        stop_speed: f32,
         fall_speed: f32,
-        GRAVITY: f32,
+        gravity: f32,
         max_fall_speed: f32,
         is_grounded: bool,
         out_of_bounds: bool
@@ -26,56 +26,70 @@ pub mod physics_controller {
             -> PhysicsController
         {
             PhysicsController {
-                ID: _id,
+                id: _id,
                 x: _x,
                 y: _y,
                 last_x: 0.0,
                 last_y: 0.0,
                 speed: 0.0,
-                MAX_SPEED: _maxspeed,
-                ACCELERATION: _acceleration,
-                JUMP_SPEED: _jumpspeed,
+                max_speed: _maxspeed,
+                acceleration: _acceleration,
+                jump_speed: _jumpspeed,
                 jumps_used: 0,
                 last_jump_time: SystemTime::now(),
                 max_jumps: _maxjumps,
-                STOP_SPEED: _stopspeed,
+                stop_speed: _stopspeed,
                 fall_speed: 0.0,
-                GRAVITY: _gravity,
+                gravity: _gravity,
                 max_fall_speed: _maxfallspeed,
                 is_grounded: false,
                 out_of_bounds: false
             }
         }
 
+        //getters
+        pub fn x(&self) -> f32 { self.x }
+        pub fn y(&self) -> f32 { self.y }
+        pub fn speed(&self) -> f32 { self.speed }
+        pub fn fall_speed(&self) -> f32 { self.fall_speed }
+
+        //setters
+        pub fn set_x(&mut self, _x: f32) { self.x = _x; }
+        pub fn set_y(&mut self, _y: f32) { self.y = _y; }
+        pub fn set_speed(&mut self, _speed: f32) { self.speed = _speed; }
+        pub fn set_fall_speed(&mut self, _fall_speed: f32) { self.fall_speed = _fall_speed; }
+        pub fn set_grounded(&mut self) { self.is_grounded = true; }
+        pub fn reset_jumps(&mut self) { self.jumps_used = 0; }
+
         // debug: prints out a list of the controller's current state
         pub fn debug(&mut self) {
-            println!("Physics Controller'{}' status:", self.ID);
+            println!("Physics Controller'{}' status:", self.id);
             println!("\tx: {}", self.x);
             println!("\ty: {}", self.y);
             println!("\tspeed: {}", self.speed);
-            println!("\tspeed: {}", self.fall_speed);
+            println!("\tfall speed: {}", self.fall_speed);
+            println!("\tjumps used: {}/{}", self.jumps_used, self.max_jumps);
             println!("\tmoving: {}", self.is_moving());
             println!("\tgrounded: {}", self.is_grounded);
-            println!("\tout of bounds: {}", self.out_of_bounds);
         }
 
         // accelerate_left: accelerates the character to the left
         pub fn accelerate_left(&mut self) {
-            if self.speed > -self.MAX_SPEED {
-                self.speed -= self.ACCELERATION;
+            if self.speed > -self.max_speed {
+                self.speed -= self.acceleration;
             }
-            if self.speed < -self.MAX_SPEED {
-                self.speed = -self.MAX_SPEED;
+            if self.speed < -self.max_speed {
+                self.speed = -self.max_speed;
             }
         }
 
         // accelerate_right: accelerates the character to the right
         pub fn accelerate_right(&mut self) {
-            if self.speed < self.MAX_SPEED {
-                self.speed += self.ACCELERATION;
+            if self.speed < self.max_speed {
+                self.speed += self.acceleration;
             }
-            if self.speed > self.MAX_SPEED {
-                self.speed = self.MAX_SPEED;
+            if self.speed > self.max_speed {
+                self.speed = self.max_speed;
             }
         }
 
@@ -87,16 +101,16 @@ pub mod physics_controller {
 
             // decelerate the character
             if self.speed > 0.0 {
-                self.speed -= self.STOP_SPEED;
+                self.speed -= self.stop_speed;
                 if self.speed < 0.0 { self.speed = 0.0; }
             } else if self.speed < 0.0 {
-                self.speed += self.STOP_SPEED;
+                self.speed += self.stop_speed;
                 if self.speed > 0.0 { self.speed = 0.0; }
             }
 
             //simulate gravity
             if !self.is_grounded && self.fall_speed < self.max_fall_speed {
-                self.fall_speed += self.GRAVITY;
+                self.fall_speed += self.gravity;
             }
 
             //reset jumps if we're on the ground
@@ -118,16 +132,22 @@ pub mod physics_controller {
         //jump: if we have jumps left, give ourselves a boost upwards. this is so we can support multiple jumps if we need
         pub fn jump(&mut self) {
             // the time comparison here is to prevent jumps from occurring on successive frames, which would be frustrating to players
-            //if SystemTime::now().duration_since(self.last_jump_time).ok().Some > 100 && self.jumps_used < self.max_jumps {
+            if /*SystemTime::now().duration_since(self.last_jump_time).ok().Some > 100 &&*/ self.jumps_used < self.max_jumps {
                 self.jumps_used += 1;
-                self.fall_speed = -self.JUMP_SPEED;
+                self.fall_speed = -self.jump_speed;
                 self.last_jump_time = SystemTime::now();
-            //}
+                self.is_grounded = false;
+            }
         }
 
         //is_moving: returns true if our position was updated last frame, otherwise returns false
         pub fn is_moving(&mut self) -> bool {
             self.speed != 0.0 && self.fall_speed != 0.0
+        }
+
+        //out_of_bounds: causes the controller to go out of bounds, reverting to a legal position in the next frame.
+        pub fn out_of_bounds(&mut self) {
+            self.out_of_bounds = true;
         }
     }
 }
