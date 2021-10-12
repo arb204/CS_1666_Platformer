@@ -47,7 +47,7 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
         }
 
         player1.physics.update();
-        player1.physics.debug();
+        //player1.physics.debug();
 
         core.wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
         core.wincan.clear();
