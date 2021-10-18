@@ -19,7 +19,7 @@ fn main() {
     //TcpStream read from what the client sent and then allows the server to write a response to the stream.
     //The for loop processes each connection produces a series of streams to handle.
     //We need to unwrap the stream to check for failed connection attempts, to handle these faile attempts appropriately (for now shutting down).
-    for stream in listener.incoming() {
+    for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
 
         //Will handle streams of connections using the threads in pool.
@@ -34,7 +34,8 @@ fn main() {
         });
         */
     }
-}
+    println!("Shutting down.");
+} //ThreadPool goes out of scope here so the drop method is executed.
 
 //Handles the connections to the TCP port.
 //We take in a mutable TcpStream type. We do this because the TcpStream keeps track of what data it returns to us. 
