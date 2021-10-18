@@ -19,7 +19,7 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
     let frame_rate = 60;
 
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites.png").unwrap();
-    let p1physcon = PhysicsController::new("player1".to_string(), 0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 7.0);
+    let p1physcon = PhysicsController::new("player1".to_string(), 0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 50.0);
     let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, 0.0, true);
 
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider);

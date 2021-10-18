@@ -82,7 +82,7 @@ pub mod physics_controller {
             if self.speed < -self.max_speed {
                 self.speed = -self.max_speed;
             }
-            println!("Speed is {}", self.speed);
+            //println!("Speed is {}", self.speed);
         }
 
         // accelerate_right: accelerates the character to the right
@@ -94,7 +94,7 @@ pub mod physics_controller {
             if self.speed > self.max_speed {
                 self.speed = self.max_speed;
             }
-            println!("Speed is {}", self.speed);
+            //println!("Speed is {}", self.speed);
         }
 
         // update: manage the character's state each frame
@@ -113,7 +113,7 @@ pub mod physics_controller {
             }
 
             //simulate gravity
-            if !self.is_grounded {//} && self.fall_speed < self.max_fall_speed {
+            if !self.is_grounded && self.fall_speed < self.max_fall_speed {
                 self.fall_speed += self.gravity;
             }
 
