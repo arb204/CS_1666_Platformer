@@ -8,7 +8,7 @@ pub mod animation_controller {
         columns: i32,
         width: i32,
         height: i32,
-        animations: Vec<Anim>
+        animations: Vec<Anim>,
         parent: &Player,
     }
 
@@ -34,15 +34,17 @@ pub mod animation_controller {
     }
 
     impl Anim {
-        pub fn new(_frames: Vec<i32>, _cstring:String, _cprio: i32)
-            -> Anim
+        pub fn new(_frames: Vec<i32>, _cstring: String, _cprio: i32)
+                   -> Anim
         {
             Anim {
                 frames: _frames,
                 condition: Condition::new(_cstring, _cprio)
             }
         }
+    }
 
+    impl Anim {
         pub fn new(_frames: Vec<i32>, _condition: Condition)
             -> Anim
         {
