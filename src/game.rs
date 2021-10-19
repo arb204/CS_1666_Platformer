@@ -38,7 +38,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 _ => {},
             }
         }
-        let keystate: HashSet<Keycode> = core.event_pump
+        let keystate: HashSet<Keycode> = event_pump
             .keyboard_state()
             .pressed_scancodes()
             .filter_map(Keycode::from_scancode)
