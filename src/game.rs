@@ -11,10 +11,9 @@ use std::thread;
 use crate::player::player::Player;
 use crate::physics_controller::physics_controller::PhysicsController;
 use crate::rect_collider::rect_collider::RectCollider;
-use crate::sdl_core::SDLCore;
 
-pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
-    let texture_creator = core.wincan.texture_creator();
+pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump) -> Result<(), String> {
+    let texture_creator = wincan.texture_creator();
 
     let frame_rate = 60;
 
@@ -25,7 +24,7 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider);
 
     'gameloop: loop {
-        for event in core.event_pump.poll_iter() {
+        for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'gameloop,
                 /*Event::KeyDown{keycode: Some(k), ..} => {
@@ -39,7 +38,7 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
                 _ => {},
             }
         }
-        let keystate: HashSet<Keycode> = core.event_pump
+        let keystate: HashSet<Keycode> = event_pump
             .keyboard_state()
             .pressed_scancodes()
             .filter_map(Keycode::from_scancode)
@@ -64,11 +63,11 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
         player1.physics.update();
         //player1.physics.debug();
 
-        core.wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
-        core.wincan.clear();
+        wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
+        wincan.clear();
 
-        core.wincan.copy(&player1.sprite_sheet, Rect::new(100, 0, 100, 100), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100)).ok();
-        core.wincan.present();
+        wincan.copy(&player1.sprite_sheet, Rect::new(100, 0, 100, 100), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100)).ok();
+        wincan.present();
 
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/frame_rate));
