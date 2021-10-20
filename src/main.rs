@@ -6,6 +6,7 @@ mod player;
 mod physics_controller;
 mod rect_collider;
 mod sdl_core;
+mod animation_controller;
 
 use crate::sdl_core::SDLCore;
 
