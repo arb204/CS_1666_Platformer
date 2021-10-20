@@ -13,12 +13,16 @@ use crate::physics_controller::physics_controller::PhysicsController;
 use crate::rect_collider::rect_collider::RectCollider;
 use crate::sdl_core::SDLCore;
 
+const TILE_SIZE: u32 = 125;
+
 pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
     let texture_creator = core.wincan.texture_creator();
 
     let frame_rate = 60;
+    let mut character_direction = 0;
 
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites.png").unwrap();
+    let stone_sheet = texture_creator.load_texture("assets/sprite_sheets/floor-sprite.png").unwrap();
     let p1physcon = PhysicsController::new("player1".to_string(), 0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 50.0);
     let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, 0.0, true);
 
@@ -39,6 +43,7 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
                 _ => {},
             }
         }
+
         let keystate: HashSet<Keycode> = core.event_pump
             .keyboard_state()
             .pressed_scancodes()
@@ -47,27 +52,41 @@ pub(crate) fn show_game(mut core: SDLCore) -> Result<(), String> {
 
         if keystate.contains(&Keycode::A) {
             player1.physics.accelerate_left();
+            character_direction = 1;
         }
         if keystate.contains(&Keycode::D) {
             player1.physics.accelerate_right();
+            character_direction = 0;
         }
         if keystate.contains(&Keycode::W) {
             player1.physics.jump();
         }
 
-        if player1.physics.y() > 620.0 && player1.physics.fall_speed() > 0.0 {
+        if player1.physics.y() > 565.0 && player1.physics.fall_speed() > 0.0 {
             player1.physics.set_grounded();
             player1.physics.reset_jumps();
             player1.physics.set_y(player1.physics.y() - player1.physics.fall_speed());
         }
 
         player1.physics.update();
-        //player1.physics.debug();
+        player1.physics.debug();
 
         core.wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
         core.wincan.clear();
 
+        // Draw stone
+        let mut i = 0;
+        while i < 130 {
+            let src = Rect::new(((i % 4) * TILE_SIZE) as i32, 0, TILE_SIZE, TILE_SIZE);
+            let pos = Rect::new((i * 10) as i32, (720 - TILE_SIZE) as i32, TILE_SIZE, TILE_SIZE);
+
+            core.wincan.copy(&stone_sheet, src, pos).ok();
+
+            i += 1;
+        }
+
         core.wincan.copy(&player1.sprite_sheet, Rect::new(100, 0, 100, 100), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100)).ok();
+
         core.wincan.present();
 
         //lock the frame rate
