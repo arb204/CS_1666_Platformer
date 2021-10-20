@@ -100,7 +100,7 @@ pub mod physics_controller {
         // update: manage the character's state each frame
         pub fn update(&mut self) {
             //move the character if necessary
-            self.x += self.speed;
+            self.x = (self.x + self.speed).clamp(0.0, 1200.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
             self.y += self.fall_speed;
 
             // decelerate the character
