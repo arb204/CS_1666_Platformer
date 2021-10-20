@@ -77,27 +77,31 @@ pub mod physics_controller {
         // accelerate_left: accelerates the character to the left
         pub fn accelerate_left(&mut self) {
             if self.speed > -self.max_speed {
+                //self.speed = -self.acceleration;
                 self.speed -= self.acceleration;
             }
             if self.speed < -self.max_speed {
                 self.speed = -self.max_speed;
             }
+            //println!("Speed is {}", self.speed);
         }
 
         // accelerate_right: accelerates the character to the right
         pub fn accelerate_right(&mut self) {
             if self.speed < self.max_speed {
+                //self.speed = self.acceleration;
                 self.speed += self.acceleration;
             }
             if self.speed > self.max_speed {
                 self.speed = self.max_speed;
             }
+            //println!("Speed is {}", self.speed);
         }
 
         // update: manage the character's state each frame
         pub fn update(&mut self) {
             //move the character if necessary
-            self.x += self.speed;
+            self.x = (self.x + self.speed).clamp(0.0, 1200.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
             self.y += self.fall_speed;
 
             // decelerate the character
