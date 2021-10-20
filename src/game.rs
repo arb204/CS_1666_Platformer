@@ -65,7 +65,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         }
 
         player1.physics.update();
-        player1.physics.debug();
+        // player1.physics.debug();
 
         wincan.copy(&player1.sprite_sheet, Rect::new(100, 0, 100, 100), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100)).ok();
         wincan.present();
