@@ -10,6 +10,9 @@ use std::thread;
 
 use crate::player::player::Player;
 use crate::physics_controller::physics_controller::PhysicsController;
+use crate::animation_controller::animation_controller::AnimController;
+use crate::animation_controller::animation_controller::Anim;
+use crate::animation_controller::animation_controller::Condition;
 use crate::rect_collider::rect_collider::RectCollider;
 
 const TILE_SIZE: u32 = 64;
@@ -25,14 +28,31 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let frame_rate = 60;
 
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites.png").unwrap();
+    let p1physcon = PhysicsController::new(/*"player1".to_string(),*/ 0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 100.0);
+    let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, 0.0, true);
+
+    //this is a list of the animations we'll use for the player
+    //the first parameter is the frames to use
+    //the second parameter is how long each frame should be drawn before progressing
+    //the third is the condition to activate the animation
+    //the last is a reference to its parent animation controller
+    let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon));
+    let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon));
+    let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon));
+    //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
+
+    let p1anim = AnimController::new(4, 3, 100, 100, vec![idle, run, jump]);
+
+    let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim);
+
+    let mut flip = false;
+    
     let stone_sprite = texture_creator.load_texture("assets/single_assets/stone_brick_64x64.png").unwrap();
     let door_sheet = texture_creator.load_texture("assets/sprite_sheets/doors_sprite_sheet.png").unwrap();
     let level_cleared_msg_sprite = texture_creator.load_texture("assets/single_assets/level_cleared_msg.png").unwrap();
-    let p1physcon = PhysicsController::new("player1".to_string(), 0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 50.0);
-    let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, 0.0, true);
 
-    let mut player1 = Player::new(p1sprite, p1physcon, p1collider);
     let mut level_cleared = false;
+
 
     'gameloop: loop {
         for event in event_pump.poll_iter() {
@@ -67,7 +87,19 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         player1.physics.update();
         // player1.physics.debug();
 
-        wincan.copy(&player1.sprite_sheet, Rect::new(100, 0, 100, 100), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100)).ok();
+        player1.anim.update(player1.physics);
+
+        // do we need to flip the player?
+        flip = if player1.physics.speed() > 0.0 && flip {
+            false
+        }
+        else if player1.physics.speed() < 0.0 && !flip {
+            true
+        }
+        else {
+            flip
+        };
+        wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100), 0.0, None, flip, false)?;
         wincan.present();
 
         //lock the frame rate

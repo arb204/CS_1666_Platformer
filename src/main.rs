@@ -5,12 +5,14 @@ mod game;
 mod player;
 mod physics_controller;
 mod rect_collider;
+mod menu;
+mod animation_controller;
 
 fn main() {
 	let sdl_cxt = sdl2::init().unwrap();
 	let video_subsys = sdl_cxt.video().unwrap();
 	let event_pump = sdl_cxt.event_pump().unwrap();
-	
+
 	let window = video_subsys.window("Warp Wizards", 1280, 720)
 		.build()
 		.map_err(|e| e.to_string())
@@ -24,13 +26,14 @@ fn main() {
 
 	// current_scene lets the game know which section is running
 	// options: mainmenu, game, credits
-	let mut current_scene = "game";
+	let mut current_scene = "mainmenu";
 
 	if current_scene == "mainmenu" {
 		//main menu code goes here
+		menu::show_menu(wincan, event_pump);
 	}
-	if current_scene == "game" {
-		//game code goes here
+	else if current_scene == "game" {
+	// 	//game code goes here
 		game::show_game(wincan, event_pump);
 	}
 	else if current_scene == "credits" {
