@@ -1,7 +1,8 @@
 pub mod physics_controller {
     use std::time::SystemTime;
+    #[derive(Copy, Clone)]
     pub struct PhysicsController {
-        id: String,
+        //id: String,
         x: f32,
         y: f32,
         last_x: f32,
@@ -22,11 +23,11 @@ pub mod physics_controller {
     }
 
     impl PhysicsController {
-        pub fn new(_id: String, _x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32)
+        pub fn new(/*_id: String,*/ _x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32)
             -> PhysicsController
         {
             PhysicsController {
-                id: _id,
+                //id: _id,
                 x: _x,
                 y: _y,
                 last_x: 0.0,
@@ -63,7 +64,7 @@ pub mod physics_controller {
 
         // debug: prints out a list of the controller's current state
         pub fn debug(&mut self) {
-            println!("Physics Controller'{}' status:", self.id);
+            //println!("Physics Controller'{}' status:", self.id);
             println!("\tx: {}", self.x);
             println!("\ty: {}", self.y);
             println!("\tspeed: {}", self.speed);
