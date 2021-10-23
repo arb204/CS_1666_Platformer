@@ -21,7 +21,5 @@ pub mod player {
                 anim: _anim
             }
         }
-        //getters
-        pub fn physics(&self) -> PhysicsController { self.physics }
     }
 }

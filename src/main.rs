@@ -14,6 +14,8 @@ fn main() {
 	let sdl_cxt = sdl2::init().unwrap();
 	let video_subsys = sdl_cxt.video().unwrap();
 	let event_pump = sdl_cxt.event_pump().unwrap();
+
+	//let core = SDLCore.init("Warp Wizards".to_string(), true, 1280, 720);
 	
 	let window = video_subsys.window("Warp Wizards", 1280, 720)
 		.build()

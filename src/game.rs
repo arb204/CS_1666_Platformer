@@ -28,7 +28,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let frame_rate = 60;
 
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites.png").unwrap();
-    let p1physcon = PhysicsController::new(/*"player1".to_string(),*/ 0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 7.0);
+    let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.3, 7.0);
     let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, 0.0, true);
 
     //this is a list of the animations we'll use for the player
@@ -79,6 +79,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1);
         if level_cleared == false && player_hit_door(&player1) {
             level_cleared = true;
+            player1.physics.immobilize();
+            player1.anim.freeze();
         }
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
@@ -90,17 +92,17 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         player1.anim.update(player1.physics);
 
         // do we need to flip the player?
-        flip = if player1.physics.speed() > 0.0 && flip {
+        flip = if level_cleared {
+            flip
+        } else if player1.physics.speed() > 0.0 && flip  {
             false
-        }
-        else if player1.physics.speed() < 0.0 && !flip {
+        } else if player1.physics.speed() < 0.0 && !flip {
             true
-        }
-        else {
+        } else {
             flip
         };
-        core.wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100), 0.0, None, flip, false)?;
-        core.wincan.present();
+        wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100), 0.0, None, flip, false)?;
+        wincan.present();
 
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/frame_rate));
@@ -123,7 +125,7 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
 }
 
 fn stop_player_at_ground(player: &mut Player) {
-    if player.physics.y() > 550.0 && player.physics.fall_speed() > 0.0 {
+    if player.physics.y() > 555.0 && player.physics.fall_speed() > 0.0 {
         player.physics.set_grounded();
         player.physics.reset_jumps();
         player.physics.set_y(player.physics.y() - player.physics.fall_speed());
