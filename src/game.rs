@@ -148,7 +148,7 @@ fn player_hit_door(player: &Player) -> bool {
 
 fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player) {
     let pos = Rect::new((1280 - DOORW) as i32, (720 - 64 - DOORH) as i32, DOORW, DOORH);
-    let mut src: Rect;
+    let src: Rect;
     if player_hit_door(player){
         // get open door
         src = Rect::new(DOORW as i32, 0, DOORW, DOORH);
@@ -162,5 +162,5 @@ fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, play
 fn draw_level_cleared_msg(wincan: &mut WindowCanvas, level_cleared_msg_sprite: &Texture) {
     let src = Rect::new(0, 0, 1280, 720);
     let pos =  Rect::new(0, 0, 1280, 720);
-    wincan.copy(&level_cleared_msg_sprite, src, pos);
+    wincan.copy(&level_cleared_msg_sprite, src, pos).ok();
 }
