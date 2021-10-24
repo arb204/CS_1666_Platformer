@@ -5,6 +5,7 @@ mod game;
 mod player;
 mod physics_controller;
 mod rect_collider;
+mod menu;
 mod sdl_core;
 mod animation_controller;
 
@@ -30,12 +31,12 @@ fn main() {
 
 	// current_scene lets the game know which section is running
 	// options: mainmenu, game, credits
-	let mut current_scene = "game";
+	let mut current_scene = "mainmenu";
 
 	if current_scene == "mainmenu" {
 		//main menu code goes here
-	}
-	if current_scene == "game" {
+		menu::show_menu(wincan, event_pump);
+	} else if current_scene == "game" {
 		//game code goes here
 		game::show_game(wincan, event_pump);
 	}
