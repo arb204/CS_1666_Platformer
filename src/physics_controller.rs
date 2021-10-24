@@ -1,7 +1,7 @@
 pub mod physics_controller {
     use std::time::SystemTime;
+    #[derive(Copy, Clone)]
     pub struct PhysicsController {
-        id: String,
         x: f32,
         y: f32,
         last_x: f32,
@@ -18,15 +18,15 @@ pub mod physics_controller {
         gravity: f32,
         max_fall_speed: f32,
         is_grounded: bool,
-        out_of_bounds: bool
+        out_of_bounds: bool,
+        can_move: bool
     }
 
     impl PhysicsController {
-        pub fn new(_id: String, _x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32)
+        pub fn new(_x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32)
             -> PhysicsController
         {
             PhysicsController {
-                id: _id,
                 x: _x,
                 y: _y,
                 last_x: 0.0,
@@ -43,7 +43,8 @@ pub mod physics_controller {
                 gravity: _gravity,
                 max_fall_speed: _maxfallspeed,
                 is_grounded: false,
-                out_of_bounds: false
+                out_of_bounds: false,
+                can_move: true
             }
         }
 
@@ -60,10 +61,11 @@ pub mod physics_controller {
         pub fn set_fall_speed(&mut self, _fall_speed: f32) { self.fall_speed = _fall_speed; }
         pub fn set_grounded(&mut self) { self.is_grounded = true; }
         pub fn reset_jumps(&mut self) { self.jumps_used = 0; }
+        pub fn immobilize(&mut self) { self.can_move = false; }
 
         // debug: prints out a list of the controller's current state
         pub fn debug(&mut self) {
-            println!("Physics Controller'{}' status:", self.id);
+            println!("Physics Controller status:");
             println!("\tx: {}", self.x);
             println!("\ty: {}", self.y);
             println!("\tspeed: {}", self.speed);
@@ -76,13 +78,11 @@ pub mod physics_controller {
         // accelerate_left: accelerates the character to the left
         pub fn accelerate_left(&mut self) {
             if self.speed > -self.max_speed {
-                //self.speed = -self.acceleration;
                 self.speed -= self.acceleration;
             }
             if self.speed < -self.max_speed {
                 self.speed = -self.max_speed;
             }
-            //println!("Speed is {}", self.speed);
         }
 
         // accelerate_right: accelerates the character to the right
@@ -94,42 +94,44 @@ pub mod physics_controller {
             if self.speed > self.max_speed {
                 self.speed = self.max_speed;
             }
-            //println!("Speed is {}", self.speed);
         }
 
         // update: manage the character's state each frame
         pub fn update(&mut self) {
-            //move the character if necessary
-            self.x = (self.x + self.speed).clamp(0.0, 1200.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
-            self.y += self.fall_speed;
+            //maybe we don't want the character to move (like finishing a level)
+            if (self.can_move) {
+                //move the character if necessary
+                self.x = (self.x + self.speed).clamp(0.0, 1200.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
+                self.y += self.fall_speed;
 
-            // decelerate the character
-            if self.speed > 0.0 {
-                self.speed -= self.stop_speed;
-                if self.speed < 0.0 { self.speed = 0.0; }
-            } else if self.speed < 0.0 {
-                self.speed += self.stop_speed;
-                if self.speed > 0.0 { self.speed = 0.0; }
-            }
+                // decelerate the character
+                if self.speed > 0.0 {
+                    self.speed -= self.stop_speed;
+                    if self.speed < 0.0 { self.speed = 0.0; }
+                } else if self.speed < 0.0 {
+                    self.speed += self.stop_speed;
+                    if self.speed > 0.0 { self.speed = 0.0; }
+                }
 
-            //simulate gravity
-            if !self.is_grounded && self.fall_speed < self.max_fall_speed {
-                self.fall_speed += self.gravity;
-            }
+                //simulate gravity
+                if !self.is_grounded && self.fall_speed < self.max_fall_speed {
+                    self.fall_speed += self.gravity;
+                }
 
-            //reset jumps if we're on the ground
-            if self.is_grounded {
-                self.jumps_used = 0;
-            }
+                //reset jumps if we're on the ground
+                if self.is_grounded {
+                    self.jumps_used = 0;
+                }
 
-            //check if we're out of bounds and correct if needed
-            if self.out_of_bounds {
-                self.x = self.last_x;
-                self.y = self.last_y;
-                self.out_of_bounds = false;
-            } else {
-                self.last_x = self.x;
-                self.last_y = self.y;
+                //check if we're out of bounds and correct if needed
+                if self.out_of_bounds {
+                    self.x = self.last_x;
+                    self.y = self.last_y;
+                    self.out_of_bounds = false;
+                } else {
+                    self.last_x = self.x;
+                    self.last_y = self.y;
+                }
             }
         }
 
