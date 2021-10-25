@@ -36,7 +36,7 @@ pub mod rect_collider {
         pub fn set_height(&mut self, _height: f32) { self.height = _height; }
         pub fn set_can_move(&mut self, _can_move: bool) { self.can_move = _can_move; }
 
-        // debug: prints out a list of the controller's current state
+        // debug: prints out a list of the rect colliders current state
         pub fn debug(&mut self) {
             println!("Rect Collider status:");
             println!("\tx: {}", self.x);
@@ -46,11 +46,10 @@ pub mod rect_collider {
             println!("\tcan_move: {}", self.can_move);
         }
 
-        pub fn is_touching(&self, other: RectCollider)
+        pub fn is_touching(&self, other: &RectCollider)
             -> bool
         {
-            println!("Touching!");
-            self.x < other.x && self.x+self.width > other.x && self.y < other.y && self.y+self.height > other.y
+            (self.height + self.y > other.y()) && (self.y < other.y() + other.height()) && (self.x + self.width > other.x()) && (self.x < other.x() + other.width())
         }
 
         // updates the rect collider every frame based off the position of the object
