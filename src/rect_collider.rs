@@ -22,7 +22,7 @@ pub mod rect_collider {
             }
         }
 
-        //mgetters
+        // getters
         pub fn x(&self) -> f32 { self.x }
         pub fn y(&self) -> f32 { self.y }
         pub fn width(&self) -> f32 { self.width }
