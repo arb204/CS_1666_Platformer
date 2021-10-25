@@ -28,8 +28,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let frame_rate = 60;
 
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites.png").unwrap();
-    let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.3, 7.0);
-    let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, 0.0, true);
+    let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.3, 70.0);
+    let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, true);
 
     //this is a list of the animations we'll use for the player
     //the first parameter is the frames to use
@@ -46,8 +46,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim);
 
     let mut flip = false;
-  
-    let stone_sprite = texture_creator.load_texture("assets/single_assets/stone_brick_64x64.png").unwrap();
+
+    let stone_sprite = texture_creator.load_texture("assets/single_assets/purple_floor_tile.png").unwrap();
     let door_sheet = texture_creator.load_texture("assets/sprite_sheets/doors_sprite_sheet.png").unwrap();
     let level_cleared_msg_sprite = texture_creator.load_texture("assets/single_assets/level_cleared_msg.png").unwrap();
 

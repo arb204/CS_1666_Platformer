@@ -53,6 +53,7 @@ pub mod physics_controller {
         pub fn y(&self) -> f32 { self.y }
         pub fn speed(&self) -> f32 { self.speed }
         pub fn fall_speed(&self) -> f32 { self.fall_speed }
+        pub fn can_move(&self) -> bool {self.can_move}
 
         //setters
         pub fn set_x(&mut self, _x: f32) { self.x = _x; }
