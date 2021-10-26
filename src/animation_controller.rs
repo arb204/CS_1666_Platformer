@@ -34,7 +34,7 @@ pub mod animation_controller {
 
         // update the physics controllers so the animations know what to do
         pub fn update(&mut self, newphysics: PhysicsController) {
-            for mut anim in self.animations.iter_mut() {
+            for anim in self.animations.iter_mut() {
                 anim.condition.update(newphysics);
             }
         }

@@ -175,7 +175,7 @@ fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, play
 fn draw_level_cleared_msg(wincan: &mut WindowCanvas, level_cleared_msg_sprite: &Texture) {
     let src = Rect::new(0, 0, 1280, 720);
     let pos =  Rect::new(0, 0, 1280, 720);
-    wincan.copy(&level_cleared_msg_sprite, src, pos);
+    wincan.copy(&level_cleared_msg_sprite, src, pos).ok();
 }
 
 fn check_bounds(player: &mut Player) {
