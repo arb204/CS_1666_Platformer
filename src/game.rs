@@ -28,7 +28,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let frame_rate = 60;
 
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites.png").unwrap();
-    let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.3, 70.0);
+    let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0);
     let p1collider = RectCollider::new(0.0, 0.0, 100.0, 100.0, true);
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32, false);
     let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32, false);
@@ -73,6 +73,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         move_player(&mut player1, &keystate);
         stop_player_at_ground(&mut player1, &floor_collider);
+        check_bounds(&mut player1);
 
         wincan.set_draw_color(BACKGROUND);
         wincan.clear();
@@ -138,8 +139,9 @@ fn stop_player_at_ground(player: &mut Player, floor_collider: &RectCollider) {
     if player.collider.is_touching(floor_collider) && player.physics.fall_speed() > 0.0 {
         player.physics.set_grounded();
         player.physics.reset_jumps();
-        player.physics.set_y(player.physics.y() - player.physics.fall_speed());
-        //player.physics.set_y(floor_collider.y() - (TILE_SIZE * 2 - 10) as f32);
+        player.physics.set_y(floor_collider.y() - (TILE_SIZE + 35) as f32);
+        player.physics.set_fall_speed(0.0);
+        //player.physics.set_y(player.physics.y() - player.physics.fall_speed());
     }
 }
 
@@ -174,4 +176,10 @@ fn draw_level_cleared_msg(wincan: &mut WindowCanvas, level_cleared_msg_sprite: &
     let src = Rect::new(0, 0, 1280, 720);
     let pos =  Rect::new(0, 0, 1280, 720);
     wincan.copy(&level_cleared_msg_sprite, src, pos);
+}
+
+fn check_bounds(player: &mut Player) {
+    if(player.collider.x() >= 1180.0 && player.physics.speed() > 0.0) {
+        player.physics.set_speed(0.0);
+    }
 }
