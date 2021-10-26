@@ -26,7 +26,7 @@ fn main() {
 
 	// current_scene lets the game know which section is running
 	// options: mainmenu, game, credits
-	let mut current_scene = "mainmenu";
+	let current_scene = "mainmenu";
 
 	if current_scene == "mainmenu" {
 		//main menu code goes here

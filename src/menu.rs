@@ -35,5 +35,5 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         } */
     }
 
-    show_game(wincan, event_pump);
+    show_game(wincan, event_pump).ok();
 }
