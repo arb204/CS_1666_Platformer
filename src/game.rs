@@ -94,6 +94,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         player1.collider.update(&player1.physics);
         player1.anim.update(player1.physics);
 
+        wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100), 0.0, None, flip, false)?;
+
         // use the following for visually testing the rect collider
         wincan.set_draw_color(g);
         wincan.draw_rect(Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100))?;
@@ -110,7 +112,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         } else {
             flip
         };
-        wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 100, 100), 0.0, None, flip, false)?;
         wincan.present();
 
         //lock the frame rate
@@ -138,6 +139,7 @@ fn stop_player_at_ground(player: &mut Player, floor_collider: &RectCollider) {
         player.physics.set_grounded();
         player.physics.reset_jumps();
         player.physics.set_y(player.physics.y() - player.physics.fall_speed());
+        //player.physics.set_y(floor_collider.y() - (TILE_SIZE * 2 - 10) as f32);
     }
 }
 
