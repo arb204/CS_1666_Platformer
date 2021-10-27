@@ -83,9 +83,9 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         // check to see if player has reached the end of the level
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
         if level_cleared == false && player1.collider.is_touching(&door_collider) {
-            //level_cleared = true;
-            //player1.physics.immobilize();
-            //player1.anim.freeze();
+            level_cleared = true;
+            player1.physics.immobilize();
+            player1.anim.freeze();
         }
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
@@ -130,7 +130,7 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
     if keystate.contains(&Keycode::D) {
         player.physics.accelerate_right();
     }
-    if keystate.contains(&Keycode::W) {
+    if keystate.contains(&Keycode::W) || keystate.contains(&Keycode::Space) {
         player.physics.jump();
     }
 }
