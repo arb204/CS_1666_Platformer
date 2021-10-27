@@ -83,12 +83,13 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         // check to see if player has reached the end of the level
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
         if level_cleared == false && player1.collider.is_touching(&door_collider) {
-            //level_cleared = true;
+            level_cleared = true;
             //player1.physics.immobilize();
             //player1.anim.freeze();
         }
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
+            level_cleared = false;
         }
 
         player1.physics.update();
