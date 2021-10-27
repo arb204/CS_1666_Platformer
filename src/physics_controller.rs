@@ -35,7 +35,7 @@ pub mod physics_controller {
                 max_speed: _maxspeed,
                 acceleration: _acceleration,
                 jump_speed: _jumpspeed,
-                jumps_used: 0,
+                jumps_used: 1,
                 last_jump_time: SystemTime::now(),
                 max_jumps: _maxjumps,
                 stop_speed: _stopspeed,
@@ -102,7 +102,7 @@ pub mod physics_controller {
             //maybe we don't want the character to move (like finishing a level)
             if self.can_move {
                 //move the character if necessary
-                self.x = (self.x + self.speed).clamp(0.0, 1200.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
+                self.x = (self.x + self.speed).clamp(0.0, 1211.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
                 self.y += self.fall_speed;
 
                 // decelerate the character

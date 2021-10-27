@@ -52,7 +52,7 @@ pub mod rect_collider {
             (self.height + self.y > other.y()) && (self.y < other.y() + other.height()) && (self.x + self.width > other.x()) && (self.x < other.x() + other.width())
         }
 
-        // updates the rect collider every frame based off the position of the object
+        // updates the rect collider every frame based on the position of the object
         pub fn update(&mut self, physics_controller: &PhysicsController) {
             self.x = physics_controller.x();
             self.y = physics_controller.y();
