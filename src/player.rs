@@ -3,22 +3,25 @@ pub mod player {
     use crate::physics_controller::physics_controller::PhysicsController;
     use crate::rect_collider::rect_collider::RectCollider;
     use crate::animation_controller::animation_controller::AnimController;
+    use crate::portal_controller::portal_controller::PortalController;
     pub struct Player<'a> {
         pub sprite_sheet: Texture<'a>,
         pub physics: PhysicsController,
         pub collider: RectCollider,
-        pub anim: AnimController
+        pub anim: AnimController,
+        pub portal: PortalController
     }
 
     impl Player<'_> {
-        pub fn new<'a>(_sheet: Texture<'a>, _physics: PhysicsController, _collider: RectCollider, _anim: AnimController)
+        pub fn new<'a>(_sheet: Texture<'a>, _physics: PhysicsController, _collider: RectCollider, _anim: AnimController, _portal: PortalController)
             -> Player<'a>
         {
             Player {
                 sprite_sheet: _sheet,
                 physics: _physics,
                 collider: _collider,
-                anim: _anim
+                anim: _anim,
+                portal: _portal
             }
         }
     }

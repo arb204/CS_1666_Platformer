@@ -52,7 +52,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     let p1anim = AnimController::new(4, 3, 69, 98, vec![idle, run, jump]);
 
-    let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim);
+    let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
 
     let mut flip = false;
 
@@ -106,8 +106,10 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         player1.physics.update();
         player1.collider.update(&player1.physics);
         player1.anim.update(player1.physics);
+        player1.portal.update(player1.physics);
 
         wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)?;
+        wincan.copy_ex(&p1wand, None, Rect::new(player1.physics.x() as i32 + 34, player1.physics.y() as i32 + 50, 50, 20), player1.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
 
         // use the following for visually testing the rect collider
         wincan.set_draw_color(g);
