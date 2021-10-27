@@ -1,7 +1,11 @@
+use std::borrow::Borrow;
 use sdl2::render::{Texture, WindowCanvas};
 use sdl2::image::LoadTexture;
 use std::time::Duration;
 use std::collections::HashSet;
+use std::hash::Hash;
+use std::io::Write;
+use std::net::UdpSocket;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::event::Event;
@@ -57,6 +61,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     let g = Color::RGBA(0, 255, 0, 255);
 
+    let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
+
     'gameloop: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -70,6 +76,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             .pressed_scancodes()
             .filter_map(Keycode::from_scancode)
             .collect();
+
+        send_to_mirror(&player1, &socket, "127.0.0.1:34254");
 
         move_player(&mut player1, &keystate);
         stop_player_at_ground(&mut player1, &floor_collider);
@@ -122,6 +130,11 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     // Out of game loop, return Ok
     Ok(())
+}
+
+fn send_to_mirror(player: &Player, socket: &UdpSocket, address: &str) {
+    socket.send_to(player.physics.x().to_ne_bytes().borrow(), address);
+    socket.send_to(player.physics.y().to_ne_bytes().borrow(), address);
 }
 
 fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
