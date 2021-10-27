@@ -7,6 +7,7 @@ mod physics_controller;
 mod rect_collider;
 mod menu;
 mod animation_controller;
+mod portal_controller;
 
 fn main() {
 	let sdl_cxt = sdl2::init().unwrap();

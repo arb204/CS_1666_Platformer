@@ -18,6 +18,7 @@ use crate::animation_controller::animation_controller::AnimController;
 use crate::animation_controller::animation_controller::Anim;
 use crate::animation_controller::animation_controller::Condition;
 use crate::rect_collider::rect_collider::RectCollider;
+use crate::portal_controller::portal_controller::PortalController;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -32,8 +33,10 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let frame_rate = 60;
 
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
+    let p1wand = texture_creator.load_texture("assets/single_assets/wand_sprite.png").unwrap();
     let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0, true);
+    let p1portalcon = PortalController::new(p1physcon);
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32, false);
     let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32, false);
 
