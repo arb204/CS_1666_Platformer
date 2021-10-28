@@ -2,11 +2,12 @@ use sdl2::render::WindowCanvas;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::event::Event;
+use sdl2::mouse::MouseUtil;
 use std::thread;
 
 use crate::game::show_game;
 
-pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump)
+pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mut mouse: MouseUtil)
 {
     let texture_creator = wincan.texture_creator();
 
@@ -35,5 +36,5 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         } */
     }
 
-    show_game(wincan, event_pump).ok();
+    show_game(wincan, event_pump, mouse).ok();
 }

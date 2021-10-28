@@ -10,6 +10,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::mouse::MouseUtil;
 use std::thread;
 
 use crate::player::player::Player;
@@ -19,6 +20,7 @@ use crate::animation_controller::animation_controller::Anim;
 use crate::animation_controller::animation_controller::Condition;
 use crate::rect_collider::rect_collider::RectCollider;
 use crate::portal_controller::portal_controller::PortalController;
+use crate::portal_controller::portal_controller::Portal;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -27,16 +29,24 @@ const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 const DOOR_POS: (u32, u32) = (1060, 430);
 
-pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump) -> Result<(), String> {
+pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mut mouse: MouseUtil) -> Result<(), String> {
+    mouse.show_cursor(false);
     let texture_creator = wincan.texture_creator();
 
     let frame_rate = 60;
 
+    let cursor = texture_creator.load_texture("assets/single_assets/cursor.png").unwrap();
+
+    let portalsprite = texture_creator.load_texture("assets/sprite_sheets/portal-sprite-sheet.png").unwrap();
+
     let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
-    let p1wand = texture_creator.load_texture("assets/single_assets/wand_sprite.png").unwrap();
-    let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0);
+    let bluewand = texture_creator.load_texture("assets/single_assets/wand_sprite_blue.png").unwrap();
+    let orangewand = texture_creator.load_texture("assets/single_assets/wand_sprite_orange.png").unwrap();
+    let p1physcon = PhysicsController::new(0.0, 0.0, 6.0, 0.7, 20.0, 2, 0.2, 1.0, 70.0);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0, true);
-    let p1portalcon = PortalController::new(p1physcon);
+    let blue_portal = Portal::new(0);
+    let orange_portal = Portal::new(1);
+    let p1portalcon = PortalController::new(-10, 60, p1physcon, vec!(blue_portal, orange_portal));
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32, false);
     let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32, false);
 
@@ -95,27 +105,14 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
         if level_cleared == false && player1.collider.is_touching(&door_collider) {
             level_cleared = true;
-            player1.physics.immobilize();
-            player1.anim.freeze();
+            player1.stop();
         }
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
-            level_cleared = false;
+            //level_cleared = false;
         }
 
-        player1.physics.update();
-        player1.collider.update(&player1.physics);
-        player1.anim.update(player1.physics);
-        player1.portal.update(player1.physics);
-
-        wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)?;
-        wincan.copy_ex(&p1wand, None, Rect::new(player1.physics.x() as i32 + 34, player1.physics.y() as i32 + 50, 50, 20), player1.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
-
-        // use the following for visually testing the rect collider
-        wincan.set_draw_color(g);
-        wincan.draw_rect(Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98))?;
-        wincan.draw_rect(Rect::new((1280 - DOORW + 25) as i32, (720 - DOORH + 25) as i32, DOORW/2 - 10 as u32, DOORH - 90 as u32))?;
-        wincan.draw_rect(Rect::new(0, (720 - TILE_SIZE) as i32, 1280, TILE_SIZE))?;
+        player1.update();
 
         // do we need to flip the player?
         flip = if level_cleared {
@@ -127,7 +124,34 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         } else {
             flip
         };
+
+        // create the portals
+        if event_pump.mouse_state().left() {
+            player1.portal.open_portal(0);
+        }
+        if event_pump.mouse_state().right() {
+            player1.portal.open_portal(1);
+        }
+        
+        for p in &player1.portal.portals {
+            wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
+        }
+
+        wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)?;
+        wincan.copy_ex(if player1.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player1.physics.x() as i32 + player1.portal.wand_x(), player1.physics.y() as i32 + player1.portal.wand_y(), 100, 20), player1.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+
+        // use the following for visually testing the rect collider
+        wincan.set_draw_color(g);
+        wincan.draw_rect(Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98))?;
+        wincan.draw_rect(Rect::new((1280 - DOORW + 25) as i32, (720 - DOORH + 25) as i32, DOORW/2 - 10 as u32, DOORH - 90 as u32))?;
+        wincan.draw_rect(Rect::new(0, (720 - TILE_SIZE) as i32, 1280, TILE_SIZE))?;
+
+        //draw a custom cursor
+        wincan.copy(&cursor, None, Rect::new(event_pump.mouse_state().x()-27, event_pump.mouse_state().y()-38, 53, 75)).ok();
+        
+        //draw to the screen
         wincan.present();
+
 
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/frame_rate));

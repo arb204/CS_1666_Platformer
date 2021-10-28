@@ -24,5 +24,20 @@ pub mod player {
                 portal: _portal
             }
         }
+
+        // update: handle all the updates we need
+        pub fn update(&mut self) {
+            self.physics.update();
+            self.collider.update(&self.physics);
+            self.anim.update(self.physics);
+            self.portal.update(self.physics);
+        }
+
+        // stop: freeze the player in place
+        pub fn stop(&mut self) {
+            self.physics.immobilize();
+            self.anim.freeze();
+            self.portal.freeze();
+        }
     }
 }

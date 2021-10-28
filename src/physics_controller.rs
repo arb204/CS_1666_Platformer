@@ -1,5 +1,5 @@
 pub mod physics_controller {
-    use std::time::SystemTime;
+    use std::time::{Duration, SystemTime};
     #[derive(Copy, Clone)]
     pub struct PhysicsController {
         x: f32,
@@ -139,7 +139,7 @@ pub mod physics_controller {
         //jump: if we have jumps left, give ourselves a boost upwards. this is so we can support multiple jumps if we need
         pub fn jump(&mut self) {
             // the time comparison here is to prevent jumps from occurring on successive frames, which would be frustrating to players
-            if /*SystemTime::now().duration_since(self.last_jump_time).ok().Some > 100 &&*/ self.jumps_used < self.max_jumps {
+            if self.last_jump_time+Duration::from_millis(500) < SystemTime::now() && self.jumps_used < self.max_jumps {
                 self.jumps_used += 1;
                 self.fall_speed = -self.jump_speed;
                 self.last_jump_time = SystemTime::now();
