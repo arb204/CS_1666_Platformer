@@ -60,16 +60,11 @@ pub mod physics_controller {
         }
 
         //setters
-        pub fn set_x(&mut self, _x: f32) { self.x = _x; }
-        pub fn set_y(&mut self, _y: f32) { self.y = _y; }
-        pub fn set_speed(&mut self, _speed: f32) { self.speed = _speed; }
-        pub fn set_fall_speed(&mut self, _fall_speed: f32) { self.fall_speed = _fall_speed; }
-        pub fn set_grounded(&mut self) { self.is_grounded = true; }
         pub fn reset_jumps(&mut self) { self.jumps_used = 0; }
         pub fn immobilize(&mut self) { self.can_move = false; }
 
         // debug: prints out a list of the controller's current state
-        pub fn debug(&mut self) {
+        /*pub fn debug(&mut self) {
             println!("Physics Controller status:");
             println!("\tx: {}", self.x);
             println!("\ty: {}", self.y);
@@ -78,7 +73,7 @@ pub mod physics_controller {
             println!("\tjumps used: {}/{}", self.jumps_used, self.max_jumps);
             println!("\tmoving: {}", self.is_moving());
             println!("\tgrounded: {}", self.is_grounded);
-        }
+        }*/
 
         // accelerate_left: accelerates the character to the left
         pub fn accelerate_left(&mut self) {
@@ -108,8 +103,8 @@ pub mod physics_controller {
                 //move the character if necessary
                 let mut x_valid = true;
                 let mut y_valid = true;
-                let my_collider_x = RectCollider::new(self.x+self.speed, self.y, 69.0, 98.0, true);
-                let my_collider_y = RectCollider::new(self.x, self.y+self.fall_speed, 69.0, 98.0, true);
+                let my_collider_x = RectCollider::new(self.x+self.speed, self.y, 69.0, 98.0);
+                let my_collider_y = RectCollider::new(self.x, self.y+self.fall_speed, 69.0, 98.0);
                 self.is_grounded = false;
                 for c in &self.colliders {
                     if c.is_touching(&my_collider_x) {
@@ -166,9 +161,9 @@ pub mod physics_controller {
         }
 
         //is_moving: returns true if our position was updated last frame, otherwise returns false
-        pub fn is_moving(&mut self) -> bool {
+        /*pub fn is_moving(&mut self) -> bool {
             self.speed != 0.0 && self.fall_speed != 0.0
-        }
+        }*/
     }
 
     /*impl Copy for PhysicsController {

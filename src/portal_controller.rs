@@ -82,7 +82,7 @@ pub mod portal_controller {
                     let rot = if rp.x() == pp.x() { 0.0 } else if rp.y() == pp.y() { 90.0 } else { (((rp.y()-pp.y())/(rp.x()-pp.x())) as f32).atan()*57.29+90.0 };
                     // we hit a suurface, but is it valid?
                     for i in &self.invalid_portal_surfaces {
-                        if i.is_touching(&RectCollider::new(pp.x() as f32, pp.y() as f32, 5.0, 5.0, false)) {
+                        if i.is_touching(&RectCollider::new(pp.x() as f32, pp.y() as f32, 5.0, 5.0)) {
                             return;
                         }
                     }
@@ -90,6 +90,13 @@ pub mod portal_controller {
                 }
                 self.last_portal_used = index as i8;
                 self.last_portal_time = SystemTime::now();
+            }
+        }
+
+        // close_all: closes all open portals
+        pub fn close_all(&mut self) {
+            for i in 0..self.portals.len() {
+                self.portals[i].close();
             }
         }
     }
@@ -118,9 +125,9 @@ pub mod portal_controller {
         pub fn y(&self) -> f32{ self.y }
         pub fn rotation(&self) -> f32{ self.rotation }
 
-        pub fn set_x(&mut self, _x: f32) { self.x = _x; }
+        /*pub fn set_x(&mut self, _x: f32) { self.x = _x; }
         pub fn set_y(&mut self, _y: f32) { self.y = _y; }
-        pub fn set_rotation(&mut self, _rot: f32) { self.rotation = _rot; }
+        pub fn set_rotation(&mut self, _rot: f32) { self.rotation = _rot; }*/
 
         // open: opens a new portal
         pub fn open(&mut self, new_x: f32, new_y: f32, new_rot: f32) {
@@ -178,13 +185,13 @@ pub mod portal_controller {
         }
 
         // try to cast through a specific point
-        pub fn cast_through(&mut self, target_x: f32, target_y: f32) -> Option<Point> {
+        /*pub fn cast_through(&mut self, target_x: f32, target_y: f32) -> Option<Point> {
             self.rotation = if target_x > self.start_x {
                 ((target_y-self.start_y)/(target_x-self.start_x)).atan()*57.29
             } else {
                 180.0+((target_y-self.start_y)/(target_x-self.start_x)).atan()*57.29
             };
             self.cast()
-        }
+        }*/
     }
 }

@@ -29,7 +29,7 @@ const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 const DOOR_POS: (u32, u32) = (1060, 430);
 
-pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mut mouse: MouseUtil) -> Result<(), String> {
+pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil) -> Result<(), String> {
     mouse.show_cursor(false);
     let texture_creator = wincan.texture_creator();
 
@@ -49,13 +49,13 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let portal_surface = texture_creator.load_texture("assets/single_assets/portal_brick_64x64.png").unwrap();
 
     // declare colliders here
-    let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32, false);
-    let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32, false);
-    let ceiling_collider = RectCollider::new(0.0, 0.0, 1280.0, TILE_SIZE as f32, false);
-    let left_wall_collider = RectCollider::new(0.0, 0.0, TILE_SIZE as f32, 720.0, false);
-    let right_wall_collider = RectCollider::new((1280-(TILE_SIZE as i32)) as f32, 0.0, TILE_SIZE as f32, 720.0, false);
-    let mid_platform_collider = RectCollider::new(544.0, 400.0, ((3*TILE_SIZE) as i32) as f32, ((4*TILE_SIZE) as i32) as f32, false);
-    let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0, true);
+    let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
+    let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32);
+    let ceiling_collider = RectCollider::new(0.0, 0.0, 1280.0, TILE_SIZE as f32);
+    let left_wall_collider = RectCollider::new(0.0, 0.0, TILE_SIZE as f32, 720.0);
+    let right_wall_collider = RectCollider::new((1280-(TILE_SIZE as i32)) as f32, 0.0, TILE_SIZE as f32, 720.0);
+    let mid_platform_collider = RectCollider::new(544.0, 400.0, ((3*TILE_SIZE) as i32) as f32, ((4*TILE_SIZE) as i32) as f32);
+    let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
 
     let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
     let blue_portal = Portal::new(0);
@@ -72,15 +72,13 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
     //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
 
-    let p1anim = AnimController::new(4, 3, 69, 98, vec![idle, run, jump]);
+    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
 
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
 
     let mut flip = false;
 
     let mut level_cleared = false;
-
-    let g = Color::RGBA(0, 255, 0, 255);
 
     let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
 
@@ -101,8 +99,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         send_to_mirror(&player1, &socket, "127.0.0.1:34254");
 
         move_player(&mut player1, &keystate);
-        //stop_player_at_ground(&mut player1, &floor_collider);
-        // check_bounds(&mut player1);
 
         wincan.set_draw_color(BACKGROUND);
         wincan.clear();
@@ -187,15 +183,8 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
     if keystate.contains(&Keycode::W) || keystate.contains(&Keycode::Space) {
         player.physics.jump();
     }
-}
-
-fn stop_player_at_ground(player: &mut Player, floor_collider: &RectCollider) {
-    if player.collider.is_touching(floor_collider) && player.physics.fall_speed() > 0.0 {
-        player.physics.set_grounded();
-        player.physics.reset_jumps();
-        player.physics.set_y(floor_collider.y() - (TILE_SIZE + 33) as f32);
-        player.physics.set_fall_speed(0.0);
-        // player.physics.set_y(player.physics.y() - player.physics.fall_speed());
+    if keystate.contains(&Keycode::LShift) {
+        player.portal.close_all();
     }
 }
 
@@ -239,9 +228,3 @@ fn draw_level_cleared_msg(wincan: &mut WindowCanvas, level_cleared_msg_sprite: &
     let pos =  Rect::new(0, 0, 1280, 720);
     wincan.copy(&level_cleared_msg_sprite, src, pos).ok();
 }
-
-// fn check_bounds(player: &mut Player) {
-//     if player.collider.x() >= 1200.0 && player.physics.speed() > 0.0 {
-//         player.physics.set_speed(0.0);
-//     }
-// }
