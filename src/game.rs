@@ -27,7 +27,7 @@ const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
 
 const DOORW: u32 = 160;
 const DOORH: u32 = 230;
-const DOOR_POS: (u32, u32) = (1060, 430);
+//const DOOR_POS: (u32, u32) = (1060, 430);
 
 pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil) -> Result<(), String> {
     mouse.show_cursor(false);
@@ -107,7 +107,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         draw_stone_floor(&mut wincan, &stone_sprite);
 
         // check to see if player has reached the end of the level
-        draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
         if level_cleared == false && player1.collider.is_touching(&door_collider) {
             level_cleared = true;
             player1.stop();
@@ -124,6 +123,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         draw_surface(&mut wincan, &nonportal_surface, 544, 400, 3, 5);
 
         draw_surface(&mut wincan, &portal_surface, 0, 720-TILE_SIZE as i32, 20, 1);
+
+        draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
         player1.update();
 
@@ -206,9 +207,9 @@ fn draw_surface(wincan: &mut WindowCanvas, sprite: &Texture, x: i32, y: i32, wid
     }
 }
 
-fn player_hit_door(player: &Player) -> bool {
+/*fn player_hit_door(player: &Player) -> bool {
     player.physics.x() > DOOR_POS.0 as f32 && player.physics.y() > DOOR_POS.1 as f32
-}
+}*/
 
 fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player, door_collider: &RectCollider) {
     let pos = Rect::new((1280 - DOORW) as i32, (720 - 64 - DOORH) as i32, DOORW, DOORH);

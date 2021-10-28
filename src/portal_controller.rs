@@ -1,7 +1,6 @@
 pub mod portal_controller {
     use crate::physics_controller::physics_controller::PhysicsController;
     use crate::rect_collider::rect_collider::RectCollider;
-    use sdl2::rect::Point;
     use std::time::{Duration, SystemTime};
     pub struct PortalController {
         wand_x: i32,
@@ -79,14 +78,14 @@ pub mod portal_controller {
                 if portal_point.is_some() && rotation_point.is_some() {
                     let pp = portal_point.unwrap();
                     let rp = rotation_point.unwrap();
-                    let rot = if rp.x() == pp.x() { 0.0 } else if rp.y() == pp.y() { 90.0 } else { (((rp.y()-pp.y())/(rp.x()-pp.x())) as f32).atan()*57.29+90.0 };
-                    // we hit a suurface, but is it valid?
+                    let rot = if rp.0 == pp.0 { 0.0 } else if rp.1 > pp.1-1.0 && rp.1 < pp.1+1.0 { 90.0 } else { (((rp.1-pp.1)/(rp.0-pp.0)) as f32).atan()*57.29+90.0 };
+                    // we hit a surface, but is it valid?
                     for i in &self.invalid_portal_surfaces {
-                        if i.is_touching(&RectCollider::new(pp.x() as f32, pp.y() as f32, 5.0, 5.0)) {
+                        if i.is_touching(&RectCollider::new(pp.0 as f32, pp.1 as f32, 5.0, 5.0)) {
                             return;
                         }
                     }
-                    self.portals[index].open(pp.x() as f32 - 30.0, pp.y() as f32 - 50.0, rot);
+                    self.portals[index].open(pp.0 - 30.0, pp.1 - 50.0, rot);
                 }
                 self.last_portal_used = index as i8;
                 self.last_portal_time = SystemTime::now();
@@ -164,7 +163,7 @@ pub mod portal_controller {
         }
 
         // cast until we hit a collider
-        pub fn cast(&mut self) -> Option<Point> {
+        pub fn cast(&mut self) -> Option<(f32, f32)> {
             let mut curr_x = self.start_x;
             let mut curr_y = self.start_y;
             let mut has_hit = false;
@@ -178,7 +177,7 @@ pub mod portal_controller {
                 }
             }
             if has_hit {
-                Some(Point::new(curr_x as i32, curr_y as i32))
+                Some((curr_x, curr_y))
             } else {
                 None
             }

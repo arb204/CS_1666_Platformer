@@ -50,7 +50,6 @@ pub mod physics_controller {
         pub fn y(&self) -> f32 { self.y }
         pub fn speed(&self) -> f32 { self.speed }
         pub fn fall_speed(&self) -> f32 { self.fall_speed }
-        pub fn can_move(&self) -> bool {self.can_move}
         pub fn colliders(&self) -> Vec<RectCollider> {
             let mut return_vec: Vec<RectCollider> = vec!();
             for c in &self.colliders {
