@@ -28,9 +28,9 @@ pub mod player {
         // update: handle all the updates we need
         pub fn update(&mut self) {
             self.physics.update();
-            self.collider.update(&self.physics);
-            self.anim.update(self.physics);
-            self.portal.update(self.physics);
+            self.collider.update(&self.physics.clone());
+            self.anim.update(self.physics.clone());
+            self.portal.update(self.physics.clone());
         }
 
         // stop: freeze the player in place

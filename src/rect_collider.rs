@@ -1,6 +1,7 @@
 pub mod rect_collider {
     use crate::physics_controller::physics_controller::PhysicsController;
 
+    #[derive(Copy, Clone)]
     pub struct RectCollider {
         x: f32,
         y: f32,
@@ -50,6 +51,12 @@ pub mod rect_collider {
             -> bool
         {
             (self.height + self.y > other.y()) && (self.y < other.y() + other.height()) && (self.x + self.width > other.x()) && (self.x < other.x() + other.width())
+        }
+
+        pub fn contains_point(&self, _x: f32, _y: f32)
+            -> bool
+        {
+            (self.height + self.y > _y) && (self.y < _y) && (self.x + self.width > _x) && (self.x < _x)
         }
 
         // updates the rect collider every frame based on the position of the object

@@ -11,11 +11,13 @@ pub mod portal_controller {
         should_rotate: bool,
         physics: PhysicsController,
         last_portal_used: i8,
-        last_portal_time: SystemTime
+        last_portal_time: SystemTime,
+        valid_portal_surfaces: Vec<RectCollider>,
+        invalid_portal_surfaces: Vec<RectCollider>
     }
 
     impl PortalController {
-        pub fn new(_x: i32, _y: i32, _physics: PhysicsController, _portals: Vec<Portal>)
+        pub fn new(_x: i32, _y: i32, _physics: PhysicsController, _portals: Vec<Portal>, _surfaces: Vec<RectCollider>, _inval_surfaces: Vec<RectCollider>)
             -> PortalController
         {
             PortalController {
@@ -26,13 +28,26 @@ pub mod portal_controller {
                 should_rotate: true,
                 physics: _physics,
                 last_portal_used: 0,
-                last_portal_time: SystemTime::now()
+                last_portal_time: SystemTime::now(),
+                valid_portal_surfaces: _surfaces,
+                invalid_portal_surfaces: _inval_surfaces
             }
         }
 
         pub fn wand_x(&self) -> i32 { self.wand_x }
         pub fn wand_y(&self) -> i32 { self.wand_y }
         pub fn last_portal(&self) -> i8 { self.last_portal_used }
+
+        pub fn all_colliders(&self) -> Vec<RectCollider> {
+            let mut return_vec: Vec<RectCollider> = vec!();
+            for v in &self.valid_portal_surfaces {
+                return_vec.push(*v);
+            }
+            for i in &self.invalid_portal_surfaces {
+                return_vec.push(*i);
+            }
+            return_vec
+        }
 
         // make it so the wand doesn't rotate (like in a level complete)
         pub fn freeze(&mut self) { self.should_rotate = false; }
@@ -59,13 +74,19 @@ pub mod portal_controller {
             // we can only open a portal every 100ms
             if self.should_rotate && self.last_portal_time+Duration::from_millis(100) < SystemTime::now() {
                 // fire two raycasts: one to determine the point where we create the portal and one to determine the angle
-                let portal_point = Raycast::new(self.physics.x()+self.wand_x as f32, self.physics.y()+self.wand_y as f32, self.wand_rotation/57.29, vec!()).cast();
-                let rotation_point = Raycast::new(self.physics.x()+self.wand_x as f32, self.physics.y()+self.wand_y as f32-1.0, self.wand_rotation/57.29, vec!()).cast();
+                let portal_point = Raycast::new(self.physics.x()+self.wand_x as f32, self.physics.y()+self.wand_y as f32, self.wand_rotation/57.29, self.all_colliders()).cast();
+                let rotation_point = Raycast::new(self.physics.x()+self.wand_x as f32, self.physics.y()+self.wand_y as f32-1.0, self.wand_rotation/57.29, self.all_colliders()).cast();
                 if portal_point.is_some() && rotation_point.is_some() {
                     let pp = portal_point.unwrap();
                     let rp = rotation_point.unwrap();
                     let rot = if rp.x() == pp.x() { 0.0 } else if rp.y() == pp.y() { 90.0 } else { (((rp.y()-pp.y())/(rp.x()-pp.x())) as f32).atan()*57.29+90.0 };
-                    self.portals[index].open(pp.x() as f32, pp.y() as f32, rot);
+                    // we hit a suurface, but is it valid?
+                    for i in &self.invalid_portal_surfaces {
+                        if i.is_touching(&RectCollider::new(pp.x() as f32, pp.y() as f32, 5.0, 5.0, false)) {
+                            return;
+                        }
+                    }
+                    self.portals[index].open(pp.x() as f32 - 30.0, pp.y() as f32 - 50.0, rot);
                 }
                 self.last_portal_used = index as i8;
                 self.last_portal_time = SystemTime::now();
@@ -143,11 +164,16 @@ pub mod portal_controller {
             while !has_hit && curr_x > 0.0 && curr_x < 1220.0 && curr_y > -30.0 && curr_y < 660.0 {
                 curr_x += self.rotation.cos();
                 curr_y += self.rotation.sin();
+                for c in &self.colliders {
+                    if c.contains_point(curr_x, curr_y) {
+                        has_hit = true;
+                    }
+                }
             }
-            if false {
-                None
-            } else {
+            if has_hit {
                 Some(Point::new(curr_x as i32, curr_y as i32))
+            } else {
+                None
             }
         }
 

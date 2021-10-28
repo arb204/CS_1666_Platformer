@@ -7,7 +7,7 @@ use std::thread;
 
 use crate::game::show_game;
 
-pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mut mouse: MouseUtil)
+pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil)
 {
     let texture_creator = wincan.texture_creator();
 
