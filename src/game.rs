@@ -29,6 +29,9 @@ const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 
+// load_level: used to load a level (UNUSED FOR NOW)
+pub(crate) fn _load_level() { }
+
 pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil) -> Result<(), String> {
     mouse.show_cursor(false);
     let texture_creator = wincan.texture_creator();

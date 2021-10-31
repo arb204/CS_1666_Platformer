@@ -56,6 +56,11 @@ pub mod portal_controller {
             self.physics = newphysics;
         }
 
+        // teleport: teleports the player to a specific portal (UNFINISHED)
+        pub fn teleport(&mut self) {
+
+        }
+
         //next_rotation: returns a float indicating the angle of the next frame
         pub fn next_rotation(&mut self, mouse_x:i32, mouse_y: i32) -> f32 {
             if self.should_rotate {
