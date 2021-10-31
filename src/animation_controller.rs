@@ -3,7 +3,6 @@ pub mod animation_controller {
     use sdl2::rect::Rect;
     use std::convert::TryInto;
     pub struct AnimController {
-        rows: i32,
         columns: i32,
         width: i32,
         height: i32,
@@ -14,11 +13,10 @@ pub mod animation_controller {
     }
 
     impl AnimController {
-        pub fn new(_rows: i32, _columns: i32, _width:i32, _height: i32, _animations: Vec<Anim>)
+        pub fn new(_columns: i32, _width:i32, _height: i32, _animations: Vec<Anim>)
             -> AnimController
         {
             AnimController {
-                rows: _rows,
                 columns: _columns,
                 width: _width,
                 height: _height,
@@ -35,7 +33,7 @@ pub mod animation_controller {
         // update the physics controllers so the animations know what to do
         pub fn update(&mut self, newphysics: PhysicsController) {
             for anim in self.animations.iter_mut() {
-                anim.condition.update(newphysics);
+                anim.condition.update(newphysics.clone());
             }
         }
 

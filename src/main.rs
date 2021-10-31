@@ -7,11 +7,13 @@ mod physics_controller;
 mod rect_collider;
 mod menu;
 mod animation_controller;
+mod portal_controller;
 
 fn main() {
 	let sdl_cxt = sdl2::init().unwrap();
 	let video_subsys = sdl_cxt.video().unwrap();
 	let event_pump = sdl_cxt.event_pump().unwrap();
+	let mouse = sdl_cxt.mouse();
 	
 	let window = video_subsys.window("Warp Wizards", 1280, 720)
 		.build()
@@ -30,10 +32,10 @@ fn main() {
 
 	if current_scene == "mainmenu" {
 		//main menu code goes here
-		menu::show_menu(wincan, event_pump);
+		menu::show_menu(wincan, event_pump, mouse);
 	} else if current_scene == "game" {
 		//game code goes here
-		game::show_game(wincan, event_pump).ok();
+		game::show_game(wincan, event_pump, mouse).ok();
 	}
 	else if current_scene == "credits" {
 		credits::show_credits(wincan);
