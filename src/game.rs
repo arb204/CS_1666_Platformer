@@ -170,8 +170,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 }
 
 fn send_to_mirror(player: &Player, socket: &UdpSocket, address: &str) {
-    socket.send_to(player.physics.x().to_ne_bytes().borrow(), address);
-    socket.send_to(player.physics.y().to_ne_bytes().borrow(), address);
+    socket.send_to(player.physics.x().to_ne_bytes().borrow(), address).ok();
+    socket.send_to(player.physics.y().to_ne_bytes().borrow(), address).ok();
 }
 
 fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
