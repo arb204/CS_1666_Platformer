@@ -7,16 +7,19 @@ pub mod portal_controller {
         wand_y: i32,
         wand_rotation: f32,
         pub portals: Vec<Portal>,
+        portal_colliders: Vec<RectCollider>,
         should_rotate: bool,
         physics: PhysicsController,
         last_portal_used: i8,
         last_portal_time: SystemTime,
         valid_portal_surfaces: Vec<RectCollider>,
-        invalid_portal_surfaces: Vec<RectCollider>
+        invalid_portal_surfaces: Vec<RectCollider>,
+        has_teleported_blue: i32,
+        has_teleported_orange: i32
     }
 
     impl PortalController {
-        pub fn new(_x: i32, _y: i32, _physics: PhysicsController, _portals: Vec<Portal>, _surfaces: Vec<RectCollider>, _inval_surfaces: Vec<RectCollider>)
+        pub fn new(_x: i32, _y: i32, _physics: PhysicsController, _portals: Vec<Portal>, _portal_colliders: Vec<RectCollider>, _surfaces: Vec<RectCollider>, _inval_surfaces: Vec<RectCollider>)
             -> PortalController
         {
             PortalController {
@@ -24,12 +27,15 @@ pub mod portal_controller {
                 wand_y: _y,
                 wand_rotation: 0.0,
                 portals: _portals,
+                portal_colliders: _portal_colliders,
                 should_rotate: true,
                 physics: _physics,
                 last_portal_used: 0,
                 last_portal_time: SystemTime::now(),
                 valid_portal_surfaces: _surfaces,
-                invalid_portal_surfaces: _inval_surfaces
+                invalid_portal_surfaces: _inval_surfaces,
+                has_teleported_blue: 0,
+                has_teleported_orange: 0
             }
         }
 
@@ -57,8 +63,23 @@ pub mod portal_controller {
         }
 
         // teleport: teleports the player to a specific portal (UNFINISHED)
-        pub fn teleport(&mut self) {
-
+        pub fn teleport(&mut self, playerCollider: &RectCollider, playerPhysics: &mut PhysicsController) {
+            // test to see if the player is touching the portal
+            if playerCollider.is_touching(&self.portal_colliders[0]) && self.has_teleported_blue == 0 {
+                playerPhysics.set_x(self.portal_colliders[1].x());
+                playerPhysics.set_y(self.portal_colliders[1].y() + 40.0);
+                self.has_teleported_orange = 1;
+            }
+            if playerCollider.is_touching(&self.portal_colliders[1]) && self.has_teleported_orange == 0 {
+                playerPhysics.set_x(self.portal_colliders[0].x());
+                playerPhysics.set_y(self.portal_colliders[0].y() + 40.0);
+                self.has_teleported_blue = 1;
+            }
+            // makes sure player doesn't rapidly teleport back and forth
+            if !playerCollider.is_touching(&self.portal_colliders[0]) && !playerCollider.is_touching(&self.portal_colliders[1]) {
+                self.has_teleported_orange = 0;
+                self.has_teleported_blue = 0;
+            }
         }
 
         //next_rotation: returns a float indicating the angle of the next frame
@@ -91,6 +112,8 @@ pub mod portal_controller {
                         }
                     }
                     self.portals[index].open(pp.0 - 30.0, pp.1 - 50.0, rot);
+                    self.portal_colliders[index].set_x(pp.0 - 30.0);
+                    self.portal_colliders[index].set_y(pp.1 - 50.0);
                 }
                 self.last_portal_used = index as i8;
                 self.last_portal_time = SystemTime::now();

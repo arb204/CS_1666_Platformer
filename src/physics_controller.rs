@@ -61,6 +61,8 @@ pub mod physics_controller {
         //setters
         pub fn reset_jumps(&mut self) { self.jumps_used = 0; }
         pub fn immobilize(&mut self) { self.can_move = false; }
+        pub fn set_x(&mut self, _x: f32) {self.x = _x}
+        pub fn set_y(&mut self, _y: f32) {self.y = _y}
 
         // debug: prints out a list of the controller's current state
         /*pub fn debug(&mut self) {

@@ -27,6 +27,10 @@ pub mod rect_collider {
         pub fn width(&self) -> f32 { self.width }
         pub fn height(&self) -> f32 { self.height }
 
+        // setters
+        pub fn set_x(&mut self, _x: f32) {self.x = _x}
+        pub fn set_y(&mut self, _y: f32) {self.y = _y}
+
         // debug: prints out a list of the rect colliders current state
         /*pub fn debug(&mut self) {
             println!("Rect Collider status:");
