@@ -75,15 +75,22 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon.clone()));
     let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon.clone()));
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
-    let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
+    //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
 
-    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
+    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
 
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
 
     let mut flip = false;
 
     let mut level_cleared = false;
+
+    let mut first_left_click = true;
+    let mut first_right_click = true;
+
+    // used to test the orientation of the portals for teleporting
+    let mut portal_blue_side = -1;
+    let mut portal_orange_side = -1;
 
     let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
 
@@ -106,7 +113,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         move_player(&mut player1, &keystate);
 
         // Is the player touching a portal?
-        player1.portal.teleport(&player1.collider, &mut player1.physics);
+        player1.portal.teleport(&mut player1.collider, &mut player1.physics, &portal_blue_side, &portal_orange_side);
 
         wincan.set_draw_color(BACKGROUND);
         wincan.clear();
@@ -147,12 +154,25 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             flip
         };
 
+        let g = Color::RGBA(0, 255, 0, 255);
+        wincan.set_draw_color(g);
+
         // create the portals
         if event_pump.mouse_state().left() {
-            player1.portal.open_portal(0);
+            if player1.portal.open_portal(0, &mut portal_blue_side, &mut portal_orange_side) == 1 {
+                if first_left_click {
+                    player1.portal.can_teleport += 1;
+                    first_left_click = false;
+                }
+            }
         }
         if event_pump.mouse_state().right() {
-            player1.portal.open_portal(1);
+            if player1.portal.open_portal(1, &mut portal_blue_side, &mut portal_orange_side) == 1 {
+                if first_right_click {
+                    player1.portal.can_teleport += 1;
+                    first_right_click = false;
+                }
+            }
         }
 
         for p in &player1.portal.portals {

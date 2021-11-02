@@ -1,14 +1,12 @@
 pub mod rect_collider {
     use crate::physics_controller::physics_controller::PhysicsController;
-    use sdl2::rect::Rect;
-    use std::cmp::{min,max};
 
     #[derive(Copy, Clone)]
     pub struct RectCollider {
         x: f32,
         y: f32,
         width: f32,
-        height: f32
+        height: f32,
     }
 
     impl RectCollider {
@@ -19,7 +17,7 @@ pub mod rect_collider {
                 x: _x,
                 y: _y,
                 width: _width,
-                height: _height
+                height: _height,
             }
         }
 
@@ -32,6 +30,8 @@ pub mod rect_collider {
         // setters
         pub fn set_x(&mut self, _x: f32) {self.x = _x}
         pub fn set_y(&mut self, _y: f32) {self.y = _y}
+        pub fn set_width(&mut self, _width: f32) {self.width = _width}
+        pub fn set_height(&mut self, _height: f32) {self.height = _height}
 
         // debug: prints out a list of the rect colliders current state
         /*pub fn debug(&mut self) {
@@ -46,16 +46,6 @@ pub mod rect_collider {
             -> bool
         {
             (self.height + self.y > other.y()) && (self.y < other.y() + other.height()) && (self.x + self.width > other.x()) && (self.x < other.x() + other.width())
-        }
-
-        pub fn get_overlap(&self, other: &RectCollider)
-            -> Rect
-        {
-            if !self.is_touching(other) {
-                Rect::new(self.x as i32, self.y as i32, 0, 0)
-            } else {
-                Rect::new(max(self.x as i32, other.x() as i32), max(self.y as i32, other.y() as i32), (max((self.x+self.width-other.x()) as i32, (other.x()+other.width()-self.x) as i32)) as u32, (max((self.y+self.height-other.y()) as i32, (other.y()+other.height()-self.y) as i32)) as u32)
-            }
         }
 
         pub fn contains_point(&self, _x: f32, _y: f32)
