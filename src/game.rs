@@ -154,9 +154,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             flip
         };
 
-        let g = Color::RGBA(0, 255, 0, 255);
-        wincan.set_draw_color(g);
-
         // create the portals
         if event_pump.mouse_state().left() {
             if player1.portal.open_portal(0, &mut portal_blue_side, &mut portal_orange_side) == 1 {

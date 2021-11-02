@@ -17,7 +17,6 @@ pub mod portal_controller {
         has_teleported_blue: i32,
         has_teleported_orange: i32,
         pub can_teleport: i32
-        //portal_side: i32
     }
 
     impl PortalController {
