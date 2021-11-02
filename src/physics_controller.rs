@@ -113,6 +113,11 @@ pub mod physics_controller {
                     }
                     if c.is_touching(&my_collider_y) {
                         y_valid = false;
+                        if my_collider_y.y() < c.y() {
+                            self.y = c.y() - 100.0;
+                        } else {
+                            self.fall_speed = 0.0;
+                        }
                     }
                     if c.contains_point(self.x+50.0, self.y+105.0) {
                         if self.fall_speed < 0.0 {

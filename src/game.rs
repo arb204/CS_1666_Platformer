@@ -75,9 +75,9 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon.clone()));
     let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon.clone()));
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
-    //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
+    let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
 
-    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
+    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
 

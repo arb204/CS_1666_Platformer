@@ -1,5 +1,7 @@
 pub mod rect_collider {
     use crate::physics_controller::physics_controller::PhysicsController;
+    use sdl2::rect::Rect;
+    use std::cmp::{min,max};
 
     #[derive(Copy, Clone)]
     pub struct RectCollider {
@@ -44,6 +46,16 @@ pub mod rect_collider {
             -> bool
         {
             (self.height + self.y > other.y()) && (self.y < other.y() + other.height()) && (self.x + self.width > other.x()) && (self.x < other.x() + other.width())
+        }
+
+        pub fn get_overlap(&self, other: &RectCollider)
+            -> Rect
+        {
+            if !self.is_touching(other) {
+                Rect::new(self.x as i32, self.y as i32, 0, 0)
+            } else {
+                Rect::new(max(self.x as i32, other.x() as i32), max(self.y as i32, other.y() as i32), (max((self.x+self.width-other.x()) as i32, (other.x()+other.width()-self.x) as i32)) as u32, (max((self.y+self.height-other.y()) as i32, (other.y()+other.height()-self.y) as i32)) as u32)
+            }
         }
 
         pub fn contains_point(&self, _x: f32, _y: f32)
