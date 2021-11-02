@@ -14,7 +14,10 @@ fn main() -> std::io::Result<()> {
 		loop{
 			let mut buf = [0; 4];
 			let (amt, src) = socket.recv_from(&mut buf)?;
-			println!("{:?}", buf);
+			let x = f32::from_ne_bytes(buf);
+			let (amt, src) = socket.recv_from(&mut buf)?;
+			let y = f32::from_ne_bytes(buf);
+			println!("{:?} {:?}", x, y);
 		}
 
 		// Redeclare `buf` as slice of the received data and send reverse data back to origin.
