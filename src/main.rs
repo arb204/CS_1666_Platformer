@@ -1,5 +1,7 @@
 extern crate sdl2;
 
+use std::env;
+
 mod credits;
 mod game;
 mod player;
@@ -27,18 +29,11 @@ fn main() {
 		.map_err(|e| e.to_string())
 		.unwrap();
 
-	// current_scene lets the game know which section is running
-	// options: mainmenu, game, credits
-	let current_scene = "mainmenu";
+	let args: Vec<String> = env::args().collect();
+	let mut mode = networking::NetworkingMode::Send;
+	if args.len() == 2 && &args[1] == "mirror" {
+		mode = networking::NetworkingMode::Receive;
+	}
 
-	if current_scene == "mainmenu" {
-		//main menu code goes here
-		menu::show_menu(wincan, event_pump, mouse);
-	} else if current_scene == "game" {
-		//game code goes here
-		game::show_game(wincan, event_pump, mouse, networking::networking::NetworkingMode::Send).ok();
-	}
-	else if current_scene == "credits" {
-		credits::show_credits(wincan);
-	}
+	menu::show_menu(wincan, event_pump, mouse, mode);
 }

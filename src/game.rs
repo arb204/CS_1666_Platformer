@@ -1,27 +1,29 @@
 use std::borrow::Borrow;
-use sdl2::render::{Texture, WindowCanvas};
-use sdl2::image::LoadTexture;
-use std::time::Duration;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::io::Write;
 use std::net::UdpSocket;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
+use std::thread;
+use std::time::Duration;
+
 use sdl2::event::Event;
+use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseUtil;
-use std::thread;
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
+use sdl2::render::{Texture, WindowCanvas};
 
-use crate::player::player::Player;
-use crate::physics_controller::physics_controller::PhysicsController;
-use crate::animation_controller::animation_controller::AnimController;
 use crate::animation_controller::animation_controller::Anim;
+use crate::animation_controller::animation_controller::AnimController;
 use crate::animation_controller::animation_controller::Condition;
-use crate::rect_collider::rect_collider::RectCollider;
-use crate::portal_controller::portal_controller::PortalController;
+use crate::networking;
+use crate::networking::NetworkingMode;
+use crate::physics_controller::physics_controller::PhysicsController;
+use crate::player::player::Player;
 use crate::portal_controller::portal_controller::Portal;
-use crate::networking::networking::NetworkingMode;
+use crate::portal_controller::portal_controller::PortalController;
+use crate::rect_collider::rect_collider::RectCollider;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -38,12 +40,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let texture_creator = wincan.texture_creator();
 
     let frame_rate = 60;
-
-    match network_mode {
-        NetworkingMode::Send => print!("SENDING"),
-        NetworkingMode::Recieve => print!("RECIEVING"),
-    }
-   
 
     // declare textures here
     let bluewand = texture_creator.load_texture("assets/single_assets/wand_sprite_blue.png").unwrap();
@@ -99,8 +95,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let mut portal_blue_side = -1;
     let mut portal_orange_side = -1;
 
-    let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
-
     'gameloop: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -114,8 +108,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             .pressed_scancodes()
             .filter_map(Keycode::from_scancode)
             .collect();
-
-        send_to_mirror(&player1, &socket, "127.0.0.1:34254");
 
         move_player(&mut player1, &keystate);
 
@@ -179,11 +171,27 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             }
         }
 
+        // now that updates are processed, we do networking and then render
+        match network_mode {
+            NetworkingMode::Send => {
+                let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
+                socket.connect("127.0.0.1:34254").unwrap();
+                networking::send_data(&mut player1, &socket, flip);
+                render_player(&mut wincan, &mut player1, flip)?;
+            }
+            NetworkingMode::Receive => {
+                let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
+                socket.connect("127.0.0.1:34255").unwrap();
+                let player_pos = networking::receive_data(&mut socket);
+                let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
+                render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
+            }
+        }
+
         for p in &player1.portal.portals {
             wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
         }
 
-        wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)?;
         wincan.copy_ex(if player1.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player1.physics.x() as i32 + player1.portal.wand_x(), player1.physics.y() as i32 + player1.portal.wand_y(), 100, 20), player1.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
 
         //draw a custom cursor
@@ -191,7 +199,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         //draw to the screen
         wincan.present();
-
 
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/frame_rate));
@@ -201,9 +208,13 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     Ok(())
 }
 
-fn send_to_mirror(player: &Player, socket: &UdpSocket, address: &str) {
-    socket.send_to(player.physics.x().to_ne_bytes().borrow(), address);
-    socket.send_to(player.physics.y().to_ne_bytes().borrow(), address);
+fn render_player(wincan: &mut WindowCanvas, mut player1: &mut Player, mut flip: bool) -> Result<(), String>{
+    wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
+}
+
+fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, player_pos: (f32, f32), flip: bool) -> Result<(), String> {
+    let player_rect = Rect::new(0, 0, 69, 98);
+    wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 
 fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
