@@ -59,11 +59,13 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let right_wall_collider = RectCollider::new((1280-(TILE_SIZE as i32)) as f32, 0.0, TILE_SIZE as f32, 720.0);
     let mid_platform_collider = RectCollider::new(544.0, 400.0, ((3*TILE_SIZE) as i32) as f32, ((4*TILE_SIZE) as i32) as f32);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
+    let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
+    let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
 
     let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
-    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider), vec!(mid_platform_collider));
+    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider), vec!(mid_platform_collider));
 
     //this is a list of the animations we'll use for the player
     //the first parameter is the frames to use
@@ -73,15 +75,22 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon.clone()));
     let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon.clone()));
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
-    let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
+    //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
 
-    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
+    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
 
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
 
     let mut flip = false;
 
     let mut level_cleared = false;
+
+    let mut first_left_click = true;
+    let mut first_right_click = true;
+
+    // used to test the orientation of the portals for teleporting
+    let mut portal_blue_side = -1;
+    let mut portal_orange_side = -1;
 
     let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
 
@@ -102,6 +111,9 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         send_to_mirror(&player1, &socket, "127.0.0.1:34254");
 
         move_player(&mut player1, &keystate);
+
+        // Is the player touching a portal?
+        player1.portal.teleport(&mut player1.collider, &mut player1.physics, &portal_blue_side, &portal_orange_side);
 
         wincan.set_draw_color(BACKGROUND);
         wincan.clear();
@@ -144,12 +156,22 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         // create the portals
         if event_pump.mouse_state().left() {
-            player1.portal.open_portal(0);
+            if player1.portal.open_portal(0, &mut portal_blue_side, &mut portal_orange_side) == 1 {
+                if first_left_click {
+                    player1.portal.can_teleport += 1;
+                    first_left_click = false;
+                }
+            }
         }
         if event_pump.mouse_state().right() {
-            player1.portal.open_portal(1);
+            if player1.portal.open_portal(1, &mut portal_blue_side, &mut portal_orange_side) == 1 {
+                if first_right_click {
+                    player1.portal.can_teleport += 1;
+                    first_right_click = false;
+                }
+            }
         }
-        
+
         for p in &player1.portal.portals {
             wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
         }
@@ -159,7 +181,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         //draw a custom cursor
         wincan.copy(&cursor, None, Rect::new(event_pump.mouse_state().x()-27, event_pump.mouse_state().y()-38, 53, 75)).ok();
-        
+
         //draw to the screen
         wincan.present();
 
