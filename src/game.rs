@@ -140,6 +140,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
+        // draw_collision_boxes(&mut wincan, &player1);
+
         player1.update();
 
         // do we need to flip the player?
@@ -230,6 +232,14 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
     if keystate.contains(&Keycode::LShift) {
         player.portal.close_all();
     }
+}
+
+// displays a green border around player and portals collider boxes for easier debugging
+fn draw_collision_boxes(wincan: &mut WindowCanvas, player: &Player) {
+    wincan.set_draw_color(Color::RGBA(0, 255, 0, 255));
+    wincan.draw_rect(Rect::new(player.collider.x() as i32, player.collider.y() as i32, player.collider.width() as u32, player.collider.height() as u32)).ok();
+    wincan.draw_rect(Rect::new(player.portal.portal_colliders[0].x() as i32, player.portal.portal_colliders[0].y() as i32, player.portal.portal_colliders[0].width() as u32, player.portal.portal_colliders[0].height() as u32)).ok();
+    wincan.draw_rect(Rect::new(player.portal.portal_colliders[1].x() as i32, player.portal.portal_colliders[1].y() as i32, player.portal.portal_colliders[1].width() as u32, player.portal.portal_colliders[1].height() as u32)).ok();
 }
 
 fn draw_stone_floor(wincan: &mut WindowCanvas, stone_sprite: &Texture) {
