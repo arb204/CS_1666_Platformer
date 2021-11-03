@@ -7,16 +7,20 @@ pub mod portal_controller {
         wand_y: i32,
         wand_rotation: f32,
         pub portals: Vec<Portal>,
+        pub portal_colliders: Vec<RectCollider>,
         should_rotate: bool,
         physics: PhysicsController,
         last_portal_used: i8,
         last_portal_time: SystemTime,
         valid_portal_surfaces: Vec<RectCollider>,
-        invalid_portal_surfaces: Vec<RectCollider>
+        invalid_portal_surfaces: Vec<RectCollider>,
+        has_teleported_blue: i32,
+        has_teleported_orange: i32,
+        pub can_teleport: i32
     }
 
     impl PortalController {
-        pub fn new(_x: i32, _y: i32, _physics: PhysicsController, _portals: Vec<Portal>, _surfaces: Vec<RectCollider>, _inval_surfaces: Vec<RectCollider>)
+        pub fn new(_x: i32, _y: i32, _physics: PhysicsController, _portals: Vec<Portal>, _portal_colliders: Vec<RectCollider>, _surfaces: Vec<RectCollider>, _inval_surfaces: Vec<RectCollider>)
             -> PortalController
         {
             PortalController {
@@ -24,12 +28,16 @@ pub mod portal_controller {
                 wand_y: _y,
                 wand_rotation: 0.0,
                 portals: _portals,
+                portal_colliders: _portal_colliders,
                 should_rotate: true,
                 physics: _physics,
                 last_portal_used: 0,
                 last_portal_time: SystemTime::now(),
                 valid_portal_surfaces: _surfaces,
-                invalid_portal_surfaces: _inval_surfaces
+                invalid_portal_surfaces: _inval_surfaces,
+                has_teleported_blue: 0,
+                has_teleported_orange: 0,
+                can_teleport: 0,
             }
         }
 
@@ -57,8 +65,61 @@ pub mod portal_controller {
         }
 
         // teleport: teleports the player to a specific portal (UNFINISHED)
-        pub fn teleport(&mut self) {
-
+        pub fn teleport(&mut self, playerCollider: &mut RectCollider, playerPhysics: &mut PhysicsController, portal_blue_side: &i32, portal_orange_side: &i32) {
+            // are both portals out? (aka, should the player be allowed to teleport?)
+            if self.can_teleport >= 2 {
+                if playerCollider.is_touching(&self.portal_colliders[0]) && self.has_teleported_blue == 0 {
+                    // portal exited is on the left wall
+                    if *portal_orange_side == 0 {
+                        playerPhysics.set_x(self.portal_colliders[1].x() + 30.0);
+                        playerPhysics.set_y(self.portal_colliders[1].y());
+                    }
+                    // portal exited is on the right wall
+                    else if *portal_orange_side == 1 {
+                        playerPhysics.set_x(self.portal_colliders[1].x() - 60.0);
+                        playerPhysics.set_y(self.portal_colliders[1].y());
+                    }
+                    // portal exited is on the cieling
+                    else if *portal_orange_side == 2 {
+                        playerPhysics.set_x(self.portal_colliders[1].x());
+                        playerPhysics.set_y(self.portal_colliders[1].y() + 30.0);
+                    }
+                    // portal exited is on the floor
+                    else if *portal_orange_side == 3 {
+                        playerPhysics.set_x(self.portal_colliders[1].x());
+                        playerPhysics.set_y(self.portal_colliders[1].y() - 30.0);
+                    }
+                    self.has_teleported_orange = 1;
+                }
+                if playerCollider.is_touching(&self.portal_colliders[1]) && self.has_teleported_orange == 0 {
+                    // portal exited is on the left wall
+                    if *portal_blue_side == 0 {
+                        playerPhysics.set_x(self.portal_colliders[0].x() + 30.0);
+                        playerPhysics.set_y(self.portal_colliders[0].y());
+                    }
+                    // portal exited is on the right wall
+                    else if *portal_blue_side == 1 {
+                        playerPhysics.set_x(self.portal_colliders[0].x() - 60.0);
+                        playerPhysics.set_y(self.portal_colliders[0].y());
+                    }
+                    // portal exited is on the cieling
+                    else if *portal_blue_side == 2 {
+                        playerPhysics.set_x(self.portal_colliders[0].x());
+                        playerPhysics.set_y(self.portal_colliders[0].y() + 30.0);
+                    }
+                    // portal exited is on the floor
+                    else if *portal_blue_side == 3 {
+                        playerPhysics.set_x(self.portal_colliders[0].x());
+                        playerPhysics.set_y(self.portal_colliders[0].y() - 30.0);
+                    }
+                    self.has_teleported_blue = 1;
+                }
+                // makes sure player doesn't rapidly teleport back and forth or get stuck in a wall
+                if !playerCollider.is_touching(&self.portal_colliders[0]) && !playerCollider.is_touching(&self.portal_colliders[1]) {
+                    self.has_teleported_orange = 0;
+                    self.has_teleported_blue = 0;
+                }
+            }
         }
 
         //next_rotation: returns a float indicating the angle of the next frame
@@ -74,7 +135,7 @@ pub mod portal_controller {
         }
 
         // open_portal: figures out where a portal should go and opens it there
-        pub fn open_portal(&mut self, index: usize) {
+        pub fn open_portal(&mut self, index: usize, portal_blue_side: &mut i32, portal_orange_side: &mut i32) -> i32 {
             // we can only open a portal every 100ms
             if self.should_rotate && self.last_portal_time+Duration::from_millis(100) < SystemTime::now() {
                 // fire two raycasts: one to determine the point where we create the portal and one to determine the angle
@@ -83,18 +144,61 @@ pub mod portal_controller {
                 if portal_point.is_some() && rotation_point.is_some() {
                     let pp = portal_point.unwrap();
                     let rp = rotation_point.unwrap();
-                    let rot = if rp.0 == pp.0 { 0.0 } else if rp.1 > pp.1-1.0 && rp.1 < pp.1+1.0 { 90.0 } else { (((rp.1-pp.1)/(rp.0-pp.0)) as f32).atan()*57.29+90.0 };
+                    // on the left or right wall
+                    let rot = if rp.0 == pp.0 {
+                        // left wall
+                        if self.wand_rotation >= 90.0 && self.wand_rotation <= 270.0 {
+                            if index == 0 { *portal_blue_side = 0; }
+                            if index == 1 { *portal_orange_side = 0; }
+                        }
+                        // right wall
+                        if self.wand_rotation >= -90.0 && self.wand_rotation < 90.0 {
+                            if index == 0 { *portal_blue_side = 1; }
+                            if index == 1 { *portal_orange_side = 1; }
+                        }
+                        0.0
+                    }
+                    // on the floor or cieling
+                    else if rp.1 > pp.1-1.0 || rp.1 < pp.1+1.0 {
+                        // cieling
+                        if (self.wand_rotation >= 180.0 && self.wand_rotation < 270.0) || (self.wand_rotation > -90.0 && self.wand_rotation <= 0.0) {
+                            if index == 0 { *portal_blue_side = 2; }
+                            if index == 1 { *portal_orange_side = 2; }
+                        }
+                        // floor
+                        if self.wand_rotation > 0.0 && self.wand_rotation < 180.0 {
+                            if index == 0 { *portal_blue_side = 3; }
+                            if index == 1 { *portal_orange_side = 3; }
+                        }
+                        90.0
+                    }
+                    else { (((rp.1-pp.1)/(rp.0-pp.0)) as f32).atan()*57.29+90.0 };
                     // we hit a surface, but is it valid?
                     for i in &self.invalid_portal_surfaces {
                         if i.is_touching(&RectCollider::new(pp.0 as f32, pp.1 as f32, 5.0, 5.0)) {
-                            return;
+                            return -1;
                         }
                     }
                     self.portals[index].open(pp.0 - 30.0, pp.1 - 50.0, rot);
+
+                    // how should we orientate the rect collider?
+                    if rot == 0.0 {
+                        self.portal_colliders[index].set_x(pp.0 - 25.0);
+                        self.portal_colliders[index].set_y(pp.1 - 45.0);
+                        self.portal_colliders[index].set_width(50.0);
+                        self.portal_colliders[index].set_height(90.0);
+                    }
+                    else if rot == 90.0 {
+                        self.portal_colliders[index].set_x(pp.0 - 45.0);
+                        self.portal_colliders[index].set_y(pp.1 - 25.0);
+                        self.portal_colliders[index].set_width(90.0);
+                        self.portal_colliders[index].set_height(50.0);
+                    }
                 }
                 self.last_portal_used = index as i8;
                 self.last_portal_time = SystemTime::now();
             }
+            return 1;
         }
 
         // close_all: closes all open portals
