@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
+
 use std::collections::HashSet;
-use std::hash::Hash;
-use std::io::Write;
+
+
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
@@ -179,7 +179,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34254").unwrap();
                 networking::send_data(&mut player1, &socket, flip);
-                render_player(&mut wincan, &mut player1, flip)?;
             }
             NetworkingMode::Receive => {
                 let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
@@ -189,6 +188,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
             }
         }
+        render_player(&mut wincan, &mut player1, flip)?;
 
         for p in &player1.portal.portals {
             wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
@@ -215,7 +215,7 @@ fn render_player(wincan: &mut WindowCanvas, mut player1: &mut Player, mut flip: 
 }
 
 fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, player_pos: (f32, f32), flip: bool) -> Result<(), String> {
-    let player_rect = Rect::new(0, 0, 69, 98);
+    let player_rect = Rect::new(0, 2*98, 69, 98);
     wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 

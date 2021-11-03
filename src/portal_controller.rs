@@ -65,57 +65,57 @@ pub mod portal_controller {
         }
 
         // teleport: teleports the player to a specific portal (UNFINISHED)
-        pub fn teleport(&mut self, playerCollider: &mut RectCollider, playerPhysics: &mut PhysicsController, portal_blue_side: &i32, portal_orange_side: &i32) {
+        pub fn teleport(&mut self, player_collider: &mut RectCollider, player_physics: &mut PhysicsController, portal_blue_side: &i32, portal_orange_side: &i32) {
             // are both portals out? (aka, should the player be allowed to teleport?)
             if self.can_teleport >= 2 {
-                if playerCollider.is_touching(&self.portal_colliders[0]) && self.has_teleported_blue == 0 {
+                if player_collider.is_touching(&self.portal_colliders[0]) && self.has_teleported_blue == 0 {
                     // portal exited is on the left wall
                     if *portal_orange_side == 0 {
-                        playerPhysics.set_x(self.portal_colliders[1].x() + 30.0);
-                        playerPhysics.set_y(self.portal_colliders[1].y());
+                        player_physics.set_x(self.portal_colliders[1].x() + 30.0);
+                        player_physics.set_y(self.portal_colliders[1].y());
                     }
                     // portal exited is on the right wall
                     else if *portal_orange_side == 1 {
-                        playerPhysics.set_x(self.portal_colliders[1].x() - 60.0);
-                        playerPhysics.set_y(self.portal_colliders[1].y());
+                        player_physics.set_x(self.portal_colliders[1].x() - 60.0);
+                        player_physics.set_y(self.portal_colliders[1].y());
                     }
                     // portal exited is on the cieling
                     else if *portal_orange_side == 2 {
-                        playerPhysics.set_x(self.portal_colliders[1].x());
-                        playerPhysics.set_y(self.portal_colliders[1].y() + 30.0);
+                        player_physics.set_x(self.portal_colliders[1].x());
+                        player_physics.set_y(self.portal_colliders[1].y() + 30.0);
                     }
                     // portal exited is on the floor
                     else if *portal_orange_side == 3 {
-                        playerPhysics.set_x(self.portal_colliders[1].x());
-                        playerPhysics.set_y(self.portal_colliders[1].y() - 30.0);
+                        player_physics.set_x(self.portal_colliders[1].x());
+                        player_physics.set_y(self.portal_colliders[1].y() - 30.0);
                     }
                     self.has_teleported_orange = 1;
                 }
-                if playerCollider.is_touching(&self.portal_colliders[1]) && self.has_teleported_orange == 0 {
+                if player_collider.is_touching(&self.portal_colliders[1]) && self.has_teleported_orange == 0 {
                     // portal exited is on the left wall
                     if *portal_blue_side == 0 {
-                        playerPhysics.set_x(self.portal_colliders[0].x() + 30.0);
-                        playerPhysics.set_y(self.portal_colliders[0].y());
+                        player_physics.set_x(self.portal_colliders[0].x() + 30.0);
+                        player_physics.set_y(self.portal_colliders[0].y());
                     }
                     // portal exited is on the right wall
                     else if *portal_blue_side == 1 {
-                        playerPhysics.set_x(self.portal_colliders[0].x() - 60.0);
-                        playerPhysics.set_y(self.portal_colliders[0].y());
+                        player_physics.set_x(self.portal_colliders[0].x() - 60.0);
+                        player_physics.set_y(self.portal_colliders[0].y());
                     }
                     // portal exited is on the cieling
                     else if *portal_blue_side == 2 {
-                        playerPhysics.set_x(self.portal_colliders[0].x());
-                        playerPhysics.set_y(self.portal_colliders[0].y() + 30.0);
+                        player_physics.set_x(self.portal_colliders[0].x());
+                        player_physics.set_y(self.portal_colliders[0].y() + 30.0);
                     }
                     // portal exited is on the floor
                     else if *portal_blue_side == 3 {
-                        playerPhysics.set_x(self.portal_colliders[0].x());
-                        playerPhysics.set_y(self.portal_colliders[0].y() - 30.0);
+                        player_physics.set_x(self.portal_colliders[0].x());
+                        player_physics.set_y(self.portal_colliders[0].y() - 30.0);
                     }
                     self.has_teleported_blue = 1;
                 }
                 // makes sure player doesn't rapidly teleport back and forth or get stuck in a wall
-                if !playerCollider.is_touching(&self.portal_colliders[0]) && !playerCollider.is_touching(&self.portal_colliders[1]) {
+                if !player_collider.is_touching(&self.portal_colliders[0]) && !player_collider.is_touching(&self.portal_colliders[1]) {
                     self.has_teleported_orange = 0;
                     self.has_teleported_blue = 0;
                 }
