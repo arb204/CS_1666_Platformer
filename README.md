@@ -66,7 +66,7 @@ The scope of the game will be 5 levels, each with a static camera where a single
 * Progress towards online functionality but most likely will not be shown for midterm evaluation  
 
 **Final Milestones**
-__MVP (75%)__
+__MVP (75%)__  
     * 5 unique levels/puzzles (15%)  
     * Online multiplayer where each player controls one character and can create one portal (20%)  
     * Physics system that supports both rectangular and ellipsoid colliders and physics (20%)  
