@@ -13,8 +13,8 @@ pub mod player {
     }
 
     impl Player<'_> {
-        pub fn new<'a>(_sheet: Texture<'a>, _physics: PhysicsController, _collider: RectCollider, _anim: AnimController, _portal: PortalController)
-            -> Player<'a>
+        pub fn new(_sheet: Texture, _physics: PhysicsController, _collider: RectCollider, _anim: AnimController, _portal: PortalController)
+                   -> Player
         {
             Player {
                 sprite_sheet: _sheet,
