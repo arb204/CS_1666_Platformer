@@ -39,14 +39,14 @@ pub mod animation_controller {
 
         //next_anim: returns a rect representing the next frame to be drawn
         pub fn next_anim(&mut self) -> Rect {
-            if self.should_animate {
+            return if self.should_animate {
                 let valid_animations = self.animations.iter().filter(|a| a.current_priority() >= 0).collect::<Vec<&Anim>>();
                 let mut max_priority_anim = valid_animations[0];
                 // find which animation has the highest priority
                 for anim in valid_animations {
                     if anim.current_priority() > max_priority_anim.current_priority() {
                         max_priority_anim = anim;
-                    } 
+                    }
                 }
                 let mut new_frame = self.previous_frame;
                 if max_priority_anim.frames().contains(&self.previous_frame) {
@@ -65,9 +65,9 @@ pub mod animation_controller {
                 }
                 self.previous_frame = new_frame;
                 // calculate where in the sprite sheet this frame is and return it
-                return Rect::new((new_frame % self.columns)*self.width, (new_frame/self.columns)*self.height, self.width as u32, self.height as u32);
+                Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
             } else {
-                return Rect::new((self.previous_frame % self.columns)*self.width, (self.previous_frame/self.columns)*self.height, self.width as u32, self.height as u32);
+                Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
             }
         }
     }
