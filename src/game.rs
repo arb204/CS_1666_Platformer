@@ -21,6 +21,7 @@ use crate::animation_controller::animation_controller::Condition;
 use crate::rect_collider::rect_collider::RectCollider;
 use crate::portal_controller::portal_controller::PortalController;
 use crate::portal_controller::portal_controller::Portal;
+use crate::networking::networking::NetworkingMode;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -32,11 +33,17 @@ const DOORH: u32 = 230;
 // load_level: used to load a level (UNUSED FOR NOW)
 pub(crate) fn _load_level() { }
 
-pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil) -> Result<(), String> {
+pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode) -> Result<(), String> {
     mouse.show_cursor(false);
     let texture_creator = wincan.texture_creator();
 
     let frame_rate = 60;
+
+    match network_mode {
+        NetworkingMode::Send => print!("SENDING"),
+        NetworkingMode::Recieve => print!("RECIEVING"),
+    }
+   
 
     // declare textures here
     let bluewand = texture_creator.load_texture("assets/single_assets/wand_sprite_blue.png").unwrap();

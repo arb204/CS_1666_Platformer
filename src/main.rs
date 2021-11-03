@@ -8,6 +8,7 @@ mod rect_collider;
 mod menu;
 mod animation_controller;
 mod portal_controller;
+mod networking;
 
 fn main() {
 	let sdl_cxt = sdl2::init().unwrap();
@@ -35,7 +36,7 @@ fn main() {
 		menu::show_menu(wincan, event_pump, mouse);
 	} else if current_scene == "game" {
 		//game code goes here
-		game::show_game(wincan, event_pump, mouse).ok();
+		game::show_game(wincan, event_pump, mouse, networking::networking::NetworkingMode::Send).ok();
 	}
 	else if current_scene == "credits" {
 		credits::show_credits(wincan);
