@@ -12,22 +12,22 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 {
     let texture_creator = wincan.texture_creator();
 
-    let start = texture_creator.load_texture("assets/single_assets/menu.png").unwrap();
+    let start = texture_creator.load_texture("assets/single_assets/start_screen.png").unwrap();
 
     wincan.copy(&start, None, None).ok();
     wincan.present();
 
-    'menuloop: loop {
+    'menu_loop: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'menuloop,
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'menu_loop,
                 Event::KeyDown{keycode: Some(k), ..} => {
                     match k {
                         // Keycode::M => {
                         //     network_mode = NetworkingMode::Receive;
                         //     break 'menuloop
                         // }
-                        _ => break 'menuloop,
+                        _ => break 'menu_loop,
                     }
                 }
                 _ => {},
