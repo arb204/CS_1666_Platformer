@@ -45,6 +45,14 @@ pub mod portal_controller {
         pub fn wand_y(&self) -> i32 { self.wand_y }
         pub fn last_portal(&self) -> i8 { self.last_portal_used }
 
+        pub fn add_valid_surface(&mut self, new_collider: RectCollider) {
+            self.valid_portal_surfaces.push(new_collider);
+        }
+
+        pub fn add_invalid_surface(&mut self, new_collider: RectCollider) {
+            self.invalid_portal_surfaces.push(new_collider);
+        }
+
         pub fn all_colliders(&self) -> Vec<RectCollider> {
             let mut return_vec: Vec<RectCollider> = vec!();
             for v in &self.valid_portal_surfaces {

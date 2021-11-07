@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
+use std::fs;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -33,7 +34,15 @@ const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 
 // load_level: used to load a level (UNUSED FOR NOW)
-pub(crate) fn _load_level() { }
+pub(crate) fn parse_level(String filename) -> Vec<Vec<&str>> {
+    let contents = fs::read_to_string(filename).expect("This file is incorrectly formatted.");
+    let mut assets = contents.split("\n").collect::<Vec<&str>>();
+    let mut results: Vec<Vec<&str>> = vec!();
+    for a in assets {
+        results.push(a.split("-").collect::<Vec<Vec<&str>>());
+    }
+    results
+}
 
 pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode) -> Result<(), String> {
     mouse.show_cursor(false);
@@ -95,6 +104,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let mut portal_blue_side = -1;
     let mut portal_orange_side = -1;
 
+    level = parse_level("level0.txt");
+
     'gameloop: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -128,6 +139,14 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
             //level_cleared = false;
+        }
+
+        for obj in parse_level {
+            for parameter in obj {
+                if obj[0] == "portalblock" {
+
+                }
+            }
         }
 
         // draw the surfaces

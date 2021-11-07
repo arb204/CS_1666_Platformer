@@ -64,6 +64,10 @@ pub mod physics_controller {
         pub fn set_x(&mut self, _x: f32) {self.x = _x}
         pub fn set_y(&mut self, _y: f32) {self.y = _y}
 
+        pub fn add_collider(&mut self, new_collider: RectCollider) {
+            self.colliders.push(new_collider);
+        }
+
         // debug: prints out a list of the controller's current state
         /*pub fn debug(&mut self) {
             println!("Physics Controller status:");
