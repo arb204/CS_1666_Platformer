@@ -61,8 +61,14 @@ pub mod physics_controller {
         //setters
         pub fn reset_jumps(&mut self) { self.jumps_used = 0; }
         pub fn immobilize(&mut self) { self.can_move = false; }
+        pub fn mobilize(&mut self) { self.can_move = true; }
         pub fn set_x(&mut self, _x: f32) {self.x = _x}
         pub fn set_y(&mut self, _y: f32) {self.y = _y}
+        pub fn reset_colliders(&mut self) { self.colliders = vec!(); }
+
+        pub fn add_collider(&mut self, new_collider: RectCollider) {
+            self.colliders.push(new_collider);
+        }
 
         // debug: prints out a list of the controller's current state
         /*pub fn debug(&mut self) {
