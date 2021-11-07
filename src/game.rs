@@ -25,6 +25,7 @@ use crate::player::player::Player;
 use crate::portal_controller::portal_controller::Portal;
 use crate::portal_controller::portal_controller::PortalController;
 use crate::rect_collider::rect_collider::RectCollider;
+use crate::credits::show_credits;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -35,6 +36,8 @@ const DOORH: u32 = 230;
 
 // load_level: used to load a level (UNUSED FOR NOW)
 pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
+    //this function returns a list of the different objects in our scene
+    //separated into the different parameters for each object
     let mut results: Vec<Vec<String>> = vec!();
     for a in fs::read_to_string("src/levels/".to_owned()+filename).unwrap().split("\r\n").collect::<Vec<&str>>() {
         let mut result = a.split("-").collect::<Vec<&str>>();
@@ -72,8 +75,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
 
-    //let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
-    let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!());
+    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
     let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
@@ -103,15 +105,25 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let mut portal_blue_side = -1;
     let mut portal_orange_side = -1;
 
-    let level = parse_level("level0.txt");
+    //level data
+    let mut current_level = 0; // what level are we on?
+    let final_level = 1; // what level is the last one?
+
+
+    let mut level = parse_level("level0.txt");
 
     // we read in the level from a file and add the necessary colliders and stuff
     for obj in level.iter() {
-        let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+        if obj[0] == "start" {
+            player1.physics.set_x(obj[1].parse::<i32>().unwrap() as f32);
+            player1.physics.set_y(obj[2].parse::<i32>().unwrap() as f32);
+        }
         if obj[0] == "portalblock" {
+            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
             player1.add_collider(new_collider, true);
         }
         if obj[0] == "nonportalblock" {
+            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
             player1.add_collider(new_collider, false);
         }
     }
@@ -148,7 +160,32 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         }
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
-            //level_cleared = false;
+            //this is just until we get the level changing logic completed
+            if current_level == final_level { break 'gameloop; }
+            player1.reset_colliders();
+            current_level += 1;
+            // this is what I'm going with until I figure out how
+            // to do "level"+current_level+".txt"
+            if current_level == 1 {
+                level = parse_level("level1.txt");
+            }
+            // we read in the next level
+            for obj in level.iter() {
+                if obj[0] == "start" {
+                    player1.physics.set_x(obj[1].parse::<i32>().unwrap() as f32);
+                    player1.physics.set_y(obj[2].parse::<i32>().unwrap() as f32);
+                }
+                if obj[0] == "portalblock" {
+                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+                    player1.add_collider(new_collider, true);
+                }
+                if obj[0] == "nonportalblock" {
+                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+                    player1.add_collider(new_collider, false);
+                }
+            }
+            player1.unstop();
+            level_cleared = false;
         }
 
         // draw the surfaces
@@ -228,6 +265,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/frame_rate));
     }
+
+    show_credits(wincan);
 
     // Out of game loop, return Ok
     Ok(())

@@ -53,6 +53,11 @@ pub mod portal_controller {
             self.invalid_portal_surfaces.push(new_collider);
         }
 
+        pub fn reset_surfaces(&mut self) {
+            self.valid_portal_surfaces = vec!();
+            self.invalid_portal_surfaces = vec!();
+        }
+
         pub fn all_colliders(&self) -> Vec<RectCollider> {
             let mut return_vec: Vec<RectCollider> = vec!();
             for v in &self.valid_portal_surfaces {
@@ -66,6 +71,7 @@ pub mod portal_controller {
 
         // make it so the wand doesn't rotate (like in a level complete)
         pub fn freeze(&mut self) { self.should_rotate = false; }
+        pub fn unfreeze(&mut self) { self.should_rotate = true; }
 
         // update the physics controllers so the wand can rotate properly
         pub fn update(&mut self, newphysics: PhysicsController) {
@@ -218,6 +224,10 @@ pub mod portal_controller {
         pub fn close_all(&mut self) {
             for i in 0..self.portals.len() {
                 self.portals[i].close();
+                self.portal_colliders[i].set_x(-100.0);
+                self.portal_colliders[i].set_y(-100.0);
+                self.portal_colliders[i].set_width(50.0);
+                self.portal_colliders[i].set_height(90.0);
             }
         }
     }

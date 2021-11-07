@@ -29,6 +29,7 @@ pub mod animation_controller {
 
         // make it so the character isn't animated (like in a level complete)
         pub fn freeze(&mut self) { self.should_animate = false; }
+        pub fn unfreeze(&mut self) { self.should_animate = true; }
 
         // update the physics controllers so the animations know what to do
         pub fn update(&mut self, newphysics: PhysicsController) {
