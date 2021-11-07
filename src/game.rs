@@ -34,12 +34,15 @@ const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 
 // load_level: used to load a level (UNUSED FOR NOW)
-pub(crate) fn parse_level(String filename) -> Vec<Vec<&str>> {
-    let contents = fs::read_to_string(filename).expect("This file is incorrectly formatted.");
-    let mut assets = contents.split("\n").collect::<Vec<&str>>();
-    let mut results: Vec<Vec<&str>> = vec!();
-    for a in assets {
-        results.push(a.split("-").collect::<Vec<Vec<&str>>());
+pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
+    let mut results: Vec<Vec<String>> = vec!();
+    for a in fs::read_to_string("src/levels/".to_owned()+filename).unwrap().split("\r\n").collect::<Vec<&str>>() {
+        let mut result = a.split("-").collect::<Vec<&str>>();
+        let mut newresult: Vec<String> = vec!();
+        for r in result {
+            newresult.push(r.to_string());
+        }
+        results.push(newresult);
     }
     results
 }
@@ -65,19 +68,15 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     // declare colliders here
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
-    let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32);
-    let ceiling_collider = RectCollider::new(0.0, 0.0, 1280.0, TILE_SIZE as f32);
-    let left_wall_collider = RectCollider::new(0.0, 0.0, TILE_SIZE as f32, 720.0);
-    let right_wall_collider = RectCollider::new((1280-(TILE_SIZE as i32)) as f32, 0.0, TILE_SIZE as f32, 720.0);
-    let mid_platform_collider = RectCollider::new(544.0, 400.0, ((3*TILE_SIZE) as i32) as f32, ((4*TILE_SIZE) as i32) as f32);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
     let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
 
-    let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
+    //let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
+    let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
-    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider), vec!(mid_platform_collider));
+    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
 
     //this is a list of the animations we'll use for the player
     //the first parameter is the frames to use
@@ -87,7 +86,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon.clone()));
     let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon.clone()));
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
-    //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
+    let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
 
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
 
@@ -104,7 +103,18 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let mut portal_blue_side = -1;
     let mut portal_orange_side = -1;
 
-    level = parse_level("level0.txt");
+    let level = parse_level("level0.txt");
+
+    // we read in the level from a file and add the necessary colliders and stuff
+    for obj in level.iter() {
+        let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+        if obj[0] == "portalblock" {
+            player1.add_collider(new_collider, true);
+        }
+        if obj[0] == "nonportalblock" {
+            player1.add_collider(new_collider, false);
+        }
+    }
 
     'gameloop: loop {
         for event in event_pump.poll_iter() {
@@ -141,21 +151,15 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             //level_cleared = false;
         }
 
-        for obj in parse_level {
-            for parameter in obj {
-                if obj[0] == "portalblock" {
-
-                }
+        // draw the surfaces
+        for obj in level.iter() {
+            if obj[0] == "portalblock" {
+                draw_surface(&mut wincan, &portal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+            }
+            if obj[0] == "nonportalblock" {
+                draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
             }
         }
-
-        // draw the surfaces
-        draw_surface(&mut wincan, &portal_surface, 0, 0, 1, 11);
-        draw_surface(&mut wincan, &portal_surface, 0, 0, 20, 1);
-        draw_surface(&mut wincan, &portal_surface, 1280-TILE_SIZE as i32, 0, 1, 11);
-        draw_surface(&mut wincan, &nonportal_surface, 544, 400, 3, 5);
-
-        draw_surface(&mut wincan, &portal_surface, 0, 720-TILE_SIZE as i32, 20, 1);
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
