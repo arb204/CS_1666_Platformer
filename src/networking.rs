@@ -37,6 +37,6 @@ pub(crate) fn receive_data(socket: &mut UdpSocket) -> (f32, f32) {
 }
 
 pub(crate) fn send_data(player: &mut Player, socket: &UdpSocket, _flip: bool) {
-    socket.send(player.physics.x().to_ne_bytes().borrow()).ok();
-    socket.send(player.physics.y().to_ne_bytes().borrow()).ok();
+    socket.send(player.physics.x().to_ne_bytes().borrow());
+    socket.send(player.physics.y().to_ne_bytes().borrow());
 }

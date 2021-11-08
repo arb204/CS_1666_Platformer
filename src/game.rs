@@ -272,7 +272,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     Ok(())
 }
 
-fn render_player(wincan: &mut WindowCanvas, player1: &mut Player, flip: bool) -> Result<(), String>{
+fn render_player(wincan: &mut WindowCanvas, mut player1: &mut Player, mut flip: bool) -> Result<(), String>{
     wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
 }
 
