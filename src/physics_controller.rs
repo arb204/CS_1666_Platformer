@@ -64,6 +64,9 @@ pub mod physics_controller {
         pub fn mobilize(&mut self) { self.can_move = true; }
         pub fn set_x(&mut self, _x: f32) {self.x = _x}
         pub fn set_y(&mut self, _y: f32) {self.y = _y}
+        pub fn set_speed(&mut self, _speed: f32) {self.speed = _speed}
+        pub fn set_fall_speed(&mut self, _fall_speed: f32) {self.fall_speed = _fall_speed}
+        pub fn set_jumps_used(&mut self, _jumps_used: i8) { self.jumps_used = _jumps_used }
         pub fn reset_colliders(&mut self) { self.colliders = vec!(); }
 
         pub fn add_collider(&mut self, new_collider: RectCollider) {
@@ -88,7 +91,8 @@ pub mod physics_controller {
                 self.speed -= self.acceleration;
             }
             if self.speed < -self.max_speed {
-                self.speed = -self.max_speed;
+                //self.speed = -self.max_speed;
+                //self.speed += self.acceleration;
             }
         }
 
@@ -99,7 +103,8 @@ pub mod physics_controller {
                 self.speed += self.acceleration;
             }
             if self.speed > self.max_speed {
-                self.speed = self.max_speed;
+                //self.speed = self.max_speed;
+                //self.speed -= self.acceleration;
             }
         }
 
