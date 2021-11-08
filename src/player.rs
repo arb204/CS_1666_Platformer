@@ -39,26 +39,5 @@ pub mod player {
             self.anim.freeze();
             self.portal.freeze();
         }
-
-        pub fn unstop(&mut self) {
-            self.physics.mobilize();
-            self.anim.unfreeze();
-            self.portal.unfreeze();
-        }
-
-        pub fn add_collider(&mut self, collider: RectCollider, valid: bool) {
-            self.physics.add_collider(collider);
-            if valid {
-                self.portal.add_valid_surface(collider);
-            } else {
-                self.portal.add_invalid_surface(collider);
-            }
-        }
-
-        pub fn reset_colliders(&mut self) {
-            self.physics.reset_colliders();
-            self.portal.reset_surfaces();
-            self.portal.close_all();
-        }
     }
 }
