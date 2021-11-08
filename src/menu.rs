@@ -2,38 +2,41 @@ use sdl2::render::WindowCanvas;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::event::Event;
-use std::thread;
+use sdl2::mouse::MouseUtil;
+
 
 use crate::game::show_game;
+use crate::networking::NetworkingMode;
 
-pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump)
+pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode)
 {
     let texture_creator = wincan.texture_creator();
 
-    let start = texture_creator.load_texture("assets/single_assets/menu.png").unwrap();
+    let start = texture_creator.load_texture("assets/single_assets/start_screen.png").unwrap();
 
     wincan.copy(&start, None, None).ok();
     wincan.present();
 
-    'menuloop: loop {
+    'menu_loop: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'menuloop,
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'menu_loop,
                 Event::KeyDown{keycode: Some(k), ..} => {
                     match k {
-                        _ => break 'menuloop,
+                        // Keycode::M => {
+                        //     network_mode = NetworkingMode::Receive;
+                        //     break 'menuloop
+                        // }
+                        _ => break 'menu_loop,
                     }
                 }
                 _ => {},
             }
         }
-        /*let keystate: HashSet<Keycode> = core.event_pump.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
-        if keystate.contains(&Keycode::Space) {
-            show_game(core);
-            // core.wincan.clear();
-            // current_scene = "game"
-        } */
     }
-
-    show_game(wincan, event_pump).ok();
+    // match &network_mode {
+    //     NetworkingMode::Send => print!("SENDING"),
+    //     NetworkingMode::Receive => print!("RECEIVING"),
+    // }
+    show_game(wincan, event_pump, mouse, network_mode).ok();
 }

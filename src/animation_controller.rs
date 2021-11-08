@@ -3,7 +3,6 @@ pub mod animation_controller {
     use sdl2::rect::Rect;
     use std::convert::TryInto;
     pub struct AnimController {
-        rows: i32,
         columns: i32,
         width: i32,
         height: i32,
@@ -14,11 +13,10 @@ pub mod animation_controller {
     }
 
     impl AnimController {
-        pub fn new(_rows: i32, _columns: i32, _width:i32, _height: i32, _animations: Vec<Anim>)
+        pub fn new(_columns: i32, _width:i32, _height: i32, _animations: Vec<Anim>)
             -> AnimController
         {
             AnimController {
-                rows: _rows,
                 columns: _columns,
                 width: _width,
                 height: _height,
@@ -31,24 +29,25 @@ pub mod animation_controller {
 
         // make it so the character isn't animated (like in a level complete)
         pub fn freeze(&mut self) { self.should_animate = false; }
+        pub fn unfreeze(&mut self) { self.should_animate = true; }
 
         // update the physics controllers so the animations know what to do
         pub fn update(&mut self, newphysics: PhysicsController) {
             for anim in self.animations.iter_mut() {
-                anim.condition.update(newphysics);
+                anim.condition.update(newphysics.clone());
             }
         }
 
         //next_anim: returns a rect representing the next frame to be drawn
         pub fn next_anim(&mut self) -> Rect {
-            if self.should_animate {
+            return if self.should_animate {
                 let valid_animations = self.animations.iter().filter(|a| a.current_priority() >= 0).collect::<Vec<&Anim>>();
                 let mut max_priority_anim = valid_animations[0];
                 // find which animation has the highest priority
                 for anim in valid_animations {
                     if anim.current_priority() > max_priority_anim.current_priority() {
                         max_priority_anim = anim;
-                    } 
+                    }
                 }
                 let mut new_frame = self.previous_frame;
                 if max_priority_anim.frames().contains(&self.previous_frame) {
@@ -67,9 +66,9 @@ pub mod animation_controller {
                 }
                 self.previous_frame = new_frame;
                 // calculate where in the sprite sheet this frame is and return it
-                return Rect::new((new_frame % self.columns)*self.width, (new_frame/self.columns)*self.height, self.width as u32, self.height as u32);
+                Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
             } else {
-                return Rect::new((self.previous_frame % self.columns)*self.width, (self.previous_frame/self.columns)*self.height, self.width as u32, self.height as u32);
+                Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
             }
         }
     }

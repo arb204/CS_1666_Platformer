@@ -1,11 +1,10 @@
 pub mod physics_controller {
-    use std::time::SystemTime;
-    #[derive(Copy, Clone)]
+    use std::time::{Duration, SystemTime};
+    use crate::rect_collider::rect_collider::RectCollider;
+    //#[derive(Copy, Clone)]
     pub struct PhysicsController {
         x: f32,
         y: f32,
-        last_x: f32,
-        last_y: f32,
         speed: f32,
         max_speed: f32,
         acceleration: f32,
@@ -18,24 +17,22 @@ pub mod physics_controller {
         gravity: f32,
         max_fall_speed: f32,
         is_grounded: bool,
-        out_of_bounds: bool,
-        can_move: bool
+        can_move: bool,
+        colliders: Vec<RectCollider>
     }
 
     impl PhysicsController {
-        pub fn new(_x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32)
+        pub fn new(_x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32, _colliders: Vec<RectCollider>)
             -> PhysicsController
         {
             PhysicsController {
                 x: _x,
                 y: _y,
-                last_x: 0.0,
-                last_y: 0.0,
                 speed: 0.0,
                 max_speed: _maxspeed,
                 acceleration: _acceleration,
                 jump_speed: _jumpspeed,
-                jumps_used: 1,
+                jumps_used: _maxjumps,
                 last_jump_time: SystemTime::now(),
                 max_jumps: _maxjumps,
                 stop_speed: _stopspeed,
@@ -43,8 +40,8 @@ pub mod physics_controller {
                 gravity: _gravity,
                 max_fall_speed: _maxfallspeed,
                 is_grounded: false,
-                out_of_bounds: false,
-                can_move: true
+                can_move: true,
+                colliders: _colliders
             }
         }
 
@@ -53,19 +50,28 @@ pub mod physics_controller {
         pub fn y(&self) -> f32 { self.y }
         pub fn speed(&self) -> f32 { self.speed }
         pub fn fall_speed(&self) -> f32 { self.fall_speed }
-        pub fn can_move(&self) -> bool {self.can_move}
+        pub fn colliders(&self) -> Vec<RectCollider> {
+            let mut return_vec: Vec<RectCollider> = vec!();
+            for c in &self.colliders {
+                return_vec.push(*c);
+            }
+            return_vec
+        }
 
         //setters
-        pub fn set_x(&mut self, _x: f32) { self.x = _x; }
-        pub fn set_y(&mut self, _y: f32) { self.y = _y; }
-        pub fn set_speed(&mut self, _speed: f32) { self.speed = _speed; }
-        pub fn set_fall_speed(&mut self, _fall_speed: f32) { self.fall_speed = _fall_speed; }
-        pub fn set_grounded(&mut self) { self.is_grounded = true; }
         pub fn reset_jumps(&mut self) { self.jumps_used = 0; }
         pub fn immobilize(&mut self) { self.can_move = false; }
+        pub fn mobilize(&mut self) { self.can_move = true; }
+        pub fn set_x(&mut self, _x: f32) {self.x = _x}
+        pub fn set_y(&mut self, _y: f32) {self.y = _y}
+        pub fn reset_colliders(&mut self) { self.colliders = vec!(); }
+
+        pub fn add_collider(&mut self, new_collider: RectCollider) {
+            self.colliders.push(new_collider);
+        }
 
         // debug: prints out a list of the controller's current state
-        pub fn debug(&mut self) {
+        /*pub fn debug(&mut self) {
             println!("Physics Controller status:");
             println!("\tx: {}", self.x);
             println!("\ty: {}", self.y);
@@ -74,7 +80,7 @@ pub mod physics_controller {
             println!("\tjumps used: {}/{}", self.jumps_used, self.max_jumps);
             println!("\tmoving: {}", self.is_moving());
             println!("\tgrounded: {}", self.is_grounded);
-        }
+        }*/
 
         // accelerate_left: accelerates the character to the left
         pub fn accelerate_left(&mut self) {
@@ -102,8 +108,36 @@ pub mod physics_controller {
             //maybe we don't want the character to move (like finishing a level)
             if self.can_move {
                 //move the character if necessary
-                self.x = (self.x + self.speed).clamp(0.0, 1211.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
-                self.y += self.fall_speed;
+                let mut x_valid = true;
+                let mut y_valid = true;
+                let my_collider_x = RectCollider::new(self.x+self.speed, self.y, 69.0, 98.0);
+                let my_collider_y = RectCollider::new(self.x, self.y+self.fall_speed, 69.0, 98.0);
+                self.is_grounded = false;
+                for c in &self.colliders {
+                    if c.is_touching(&my_collider_x) {
+                        x_valid = false;
+                    }
+                    if c.is_touching(&my_collider_y) {
+                        y_valid = false;
+                        if my_collider_y.y() < c.y() {
+                            self.y = c.y() - 100.0;
+                        } else {
+                            self.fall_speed = 0.0;
+                        }
+                    }
+                    if c.contains_point(self.x+50.0, self.y+105.0) {
+                        if self.fall_speed < 0.0 {
+                            y_valid = true;
+                        }
+                        self.is_grounded = true;
+                    }
+                }
+                if x_valid {
+                    self.x = (self.x + self.speed).clamp(0.0, 1211.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
+                }
+                if y_valid {
+                    self.y += self.fall_speed;
+                }
 
                 // decelerate the character
                 if self.speed > 0.0 {
@@ -115,23 +149,14 @@ pub mod physics_controller {
                 }
 
                 //simulate gravity
-                if !self.is_grounded && self.fall_speed < self.max_fall_speed {
+                if self.fall_speed < self.max_fall_speed {
                     self.fall_speed += self.gravity;
                 }
 
                 //reset jumps if we're on the ground
-                if self.is_grounded {
-                    self.jumps_used = 0;
-                }
-
-                //check if we're out of bounds and correct if needed
-                if self.out_of_bounds {
-                    self.x = self.last_x;
-                    self.y = self.last_y;
-                    self.out_of_bounds = false;
-                } else {
-                    self.last_x = self.x;
-                    self.last_y = self.y;
+                if self.is_grounded && self.fall_speed > 0.0 {
+                    self.reset_jumps();
+                    self.fall_speed = 0.0;
                 }
             }
         }
@@ -139,7 +164,7 @@ pub mod physics_controller {
         //jump: if we have jumps left, give ourselves a boost upwards. this is so we can support multiple jumps if we need
         pub fn jump(&mut self) {
             // the time comparison here is to prevent jumps from occurring on successive frames, which would be frustrating to players
-            if /*SystemTime::now().duration_since(self.last_jump_time).ok().Some > 100 &&*/ self.jumps_used < self.max_jumps {
+            if self.last_jump_time+Duration::from_millis(500) < SystemTime::now() && self.jumps_used < self.max_jumps {
                 self.jumps_used += 1;
                 self.fall_speed = -self.jump_speed;
                 self.last_jump_time = SystemTime::now();
@@ -148,13 +173,54 @@ pub mod physics_controller {
         }
 
         //is_moving: returns true if our position was updated last frame, otherwise returns false
-        pub fn is_moving(&mut self) -> bool {
+        /*pub fn is_moving(&mut self) -> bool {
             self.speed != 0.0 && self.fall_speed != 0.0
-        }
+        }*/
+    }
 
-        //out_of_bounds: causes the controller to go out of bounds, reverting to a legal position in the next frame.
-        pub fn out_of_bounds(&mut self) {
-            self.out_of_bounds = true;
+    /*impl Copy for PhysicsController {
+        fn copy(&self) -> PhysicsController {
+            PhysicsController {
+                x: self.x,
+                y: self.y,
+                speed: self.speed,
+                max_speed: self.max_speed,
+                acceleration: self.acceleration,
+                jump_speed: self.jump_speed,
+                jumps_used: self.jumps_used,
+                last_jump_time: self.last_jump_time,
+                max_jumps: self._maxjumps,
+                stop_speed: self.stop_speed,
+                fall_speed: self.fall_speed,
+                gravity: self.gravity,
+                max_fall_speed: self.max_fall_speed,
+                is_grounded: self.is_grounded,
+                can_move: self.can_move,
+                colliders: self.colliders()
+            }
+        }
+    }*/
+
+    impl Clone for PhysicsController {
+        fn clone(&self) -> PhysicsController {
+            PhysicsController {
+                x: self.x,
+                y: self.y,
+                speed: self.speed,
+                max_speed: self.max_speed,
+                acceleration: self.acceleration,
+                jump_speed: self.jump_speed,
+                jumps_used: self.jumps_used,
+                last_jump_time: self.last_jump_time,
+                max_jumps: self.max_jumps,
+                stop_speed: self.stop_speed,
+                fall_speed: self.fall_speed,
+                gravity: self.gravity,
+                max_fall_speed: self.max_fall_speed,
+                is_grounded: self.is_grounded,
+                can_move: self.can_move,
+                colliders: self.colliders()
+            }
         }
     }
 }
