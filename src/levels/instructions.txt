@@ -6,5 +6,7 @@ To create a level, just follow these simple instructions:
 2. To make a non-portal surface:
     nonportalblock-{x position}-{y-position}-{width in tiles}-{height in tiles}
 
+note: all tiles are 64x64 px, window is 1280 x 720 which equates to 20 x 11.25 tiles
+
 3. To set a start point for your level:
     start-{x position}-{y-position}
