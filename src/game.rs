@@ -109,7 +109,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             .filter_map(Keycode::from_scancode)
             .collect();
 
-        move_player(&mut player1, &keystate);
+        move_player(&mut player1, &keystate, &mut first_left_click, &mut first_right_click);
 
         // Is the player touching a portal?
         player1.portal.teleport(&mut player1.collider, &mut player1.physics, &portal_blue_side, &portal_orange_side);
@@ -219,7 +219,7 @@ fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, pla
     wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 
-fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
+fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_click: &mut bool, first_right_click: &mut bool) {
     if keystate.contains(&Keycode::A) {
         player.physics.accelerate_left();
     }
@@ -231,6 +231,9 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
     }
     if keystate.contains(&Keycode::LShift) {
         player.portal.close_all();
+        *first_left_click = true;
+        *first_right_click = true;
+        player.portal.can_teleport = 0;
     }
 }
 
