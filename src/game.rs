@@ -107,7 +107,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     //level data
     let mut current_level = 0; // what level are we on?
-    let final_level = 1; // what level is the last one?
+    let final_level = 2; // what level is the last one?
 
 
     let mut level = parse_level("level0.txt");
@@ -166,9 +166,14 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             current_level += 1;
             // this is what I'm going with until I figure out how
             // to do "level"+current_level+".txt"
-            if current_level == 1 {
+            let current_level_file = &format!("level{level}.txt", level = current_level);
+            level = parse_level(current_level_file);
+            /*if current_level == 1 {
                 level = parse_level("level1.txt");
             }
+            else if current_level == 2 {
+                level = parse_level("level2.txt");
+            }*/
             // we read in the next level
             for obj in level.iter() {
                 if obj[0] == "start" {
