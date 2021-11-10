@@ -1,0 +1,10 @@
+To create a level, just follow these simple instructions:
+
+1. To make a portal surface:
+    portalblock-{x position}-{y-position}-{width in tiles}-{height in tiles}
+
+2. To make a non-portal surface:
+    nonportalblock-{x position}-{y-position}-{width in tiles}-{height in tiles}
+
+3. To set a start point for your level:
+    start-{x position}-{y-position}
