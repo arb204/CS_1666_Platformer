@@ -1,0 +1,6 @@
+portalblock-0-0-1-12
+portalblock-0-0-20-1
+portalblock-0-656-20-1
+portalblock-1216-0-1-12
+nonportalblock-544-400-3-4
+start-75-500
