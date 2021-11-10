@@ -86,7 +86,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
 
-    let block = ObjectController::new(block_collider);
+    let mut block = ObjectController::new(block_collider);
 
     let mut flip = false;
 
@@ -113,7 +113,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             .filter_map(Keycode::from_scancode)
             .collect();
 
-        move_player(&mut player1, &keystate, &mut first_left_click, &mut first_right_click);
+        move_player(&mut player1, &keystate, &mut first_left_click, &mut first_right_click, &mut block);
 
         // Is the player touching a portal?
         player1.portal.teleport(&mut player1.collider, &mut player1.physics, &portal_blue_side, &portal_orange_side);
@@ -160,6 +160,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         } else {
             flip
         };
+
+        block.update();
 
         // create the portals
         if event_pump.mouse_state().left() {
@@ -225,7 +227,7 @@ fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, pla
     wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 
-fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_click: &mut bool, first_right_click: &mut bool) {
+fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_click: &mut bool, first_right_click: &mut bool, block: &mut ObjectController) {
     if keystate.contains(&Keycode::A) {
         player.physics.accelerate_left();
     }
@@ -240,6 +242,14 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_clic
         *first_left_click = true;
         *first_right_click = true;
         player.portal.can_teleport = 0;
+    }
+    if keystate.contains(&Keycode::S) {
+        if block.carried() {
+            block.put_down(&player);
+        }
+        else if player.collider.is_touching(&block.collider()) {
+            block.picked_up(&player);
+        }
     }
 }
 
