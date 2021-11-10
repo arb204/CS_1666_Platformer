@@ -5,7 +5,6 @@ use std::collections::HashSet;
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
-use std::fs;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -25,8 +24,11 @@ use crate::player::player::Player;
 use crate::portal_controller::portal_controller::Portal;
 use crate::portal_controller::portal_controller::PortalController;
 use crate::rect_collider::rect_collider::RectCollider;
+<<<<<<< HEAD
 use crate::object_controller::object_controller::ObjectController;
 use crate::credits::show_credits;
+=======
+>>>>>>> parent of c3d3072 (Merge branch 'arb204:main' into main)
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -36,20 +38,7 @@ const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 
 // load_level: used to load a level (UNUSED FOR NOW)
-pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
-    //this function returns a list of the different objects in our scene
-    //separated into the different parameters for each object
-    let mut results: Vec<Vec<String>> = vec!();
-    for a in fs::read_to_string("src/levels/".to_owned()+filename).unwrap().split("\r\n").collect::<Vec<&str>>() {
-        let mut result = a.split("-").collect::<Vec<&str>>();
-        let mut newresult: Vec<String> = vec!();
-        for r in result {
-            newresult.push(r.to_string());
-        }
-        results.push(newresult);
-    }
-    results
-}
+pub(crate) fn _load_level() { }
 
 pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode) -> Result<(), String> {
     mouse.show_cursor(false);
@@ -72,15 +61,20 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     // declare colliders here
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
+    let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32);
+    let ceiling_collider = RectCollider::new(0.0, 0.0, 1280.0, TILE_SIZE as f32);
+    let left_wall_collider = RectCollider::new(0.0, 0.0, TILE_SIZE as f32, 720.0);
+    let right_wall_collider = RectCollider::new((1280-(TILE_SIZE as i32)) as f32, 0.0, TILE_SIZE as f32, 720.0);
+    let mid_platform_collider = RectCollider::new(544.0, 400.0, ((3*TILE_SIZE) as i32) as f32, ((4*TILE_SIZE) as i32) as f32);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
     let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
-    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!());
+    let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
-    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
+    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider), vec!(mid_platform_collider));
 
     //this is a list of the animations we'll use for the player
     //the first parameter is the frames to use
@@ -90,7 +84,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon.clone()));
     let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon.clone()));
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
-    let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
+    //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
 
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
 
@@ -109,6 +103,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let mut portal_blue_side = -1;
     let mut portal_orange_side = -1;
 
+<<<<<<< HEAD
     // //level data
     // let mut current_level = 0; // what level are we on?
     // let final_level = 1; // what level is the last one?
@@ -132,6 +127,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     //     }
     // }
 
+=======
+>>>>>>> parent of c3d3072 (Merge branch 'arb204:main' into main)
     'gameloop: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -164,43 +161,16 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         }
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
-            //this is just until we get the level changing logic completed
-            if current_level == final_level { break 'gameloop; }
-            player1.reset_colliders();
-            current_level += 1;
-            // this is what I'm going with until I figure out how
-            // to do "level"+current_level+".txt"
-            if current_level == 1 {
-                level = parse_level("level1.txt");
-            }
-            // we read in the next level
-            for obj in level.iter() {
-                if obj[0] == "start" {
-                    player1.physics.set_x(obj[1].parse::<i32>().unwrap() as f32);
-                    player1.physics.set_y(obj[2].parse::<i32>().unwrap() as f32);
-                }
-                if obj[0] == "portalblock" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, true);
-                }
-                if obj[0] == "nonportalblock" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, false);
-                }
-            }
-            player1.unstop();
-            level_cleared = false;
+            //level_cleared = false;
         }
 
         // draw the surfaces
-        for obj in level.iter() {
-            if obj[0] == "portalblock" {
-                draw_surface(&mut wincan, &portal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
-            }
-            if obj[0] == "nonportalblock" {
-                draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
-            }
-        }
+        draw_surface(&mut wincan, &portal_surface, 0, 0, 1, 11);
+        draw_surface(&mut wincan, &portal_surface, 0, 0, 20, 1);
+        draw_surface(&mut wincan, &portal_surface, 1280-TILE_SIZE as i32, 0, 1, 11);
+        draw_surface(&mut wincan, &nonportal_surface, 544, 400, 3, 5);
+
+        draw_surface(&mut wincan, &portal_surface, 0, 720-TILE_SIZE as i32, 20, 1);
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
@@ -271,8 +241,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/frame_rate));
     }
-
-    show_credits(wincan);
 
     // Out of game loop, return Ok
     Ok(())

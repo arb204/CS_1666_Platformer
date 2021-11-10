@@ -45,19 +45,6 @@ pub mod portal_controller {
         pub fn wand_y(&self) -> i32 { self.wand_y }
         pub fn last_portal(&self) -> i8 { self.last_portal_used }
 
-        pub fn add_valid_surface(&mut self, new_collider: RectCollider) {
-            self.valid_portal_surfaces.push(new_collider);
-        }
-
-        pub fn add_invalid_surface(&mut self, new_collider: RectCollider) {
-            self.invalid_portal_surfaces.push(new_collider);
-        }
-
-        pub fn reset_surfaces(&mut self) {
-            self.valid_portal_surfaces = vec!();
-            self.invalid_portal_surfaces = vec!();
-        }
-
         pub fn all_colliders(&self) -> Vec<RectCollider> {
             let mut return_vec: Vec<RectCollider> = vec!();
             for v in &self.valid_portal_surfaces {
@@ -71,7 +58,6 @@ pub mod portal_controller {
 
         // make it so the wand doesn't rotate (like in a level complete)
         pub fn freeze(&mut self) { self.should_rotate = false; }
-        pub fn unfreeze(&mut self) { self.should_rotate = true; }
 
         // update the physics controllers so the wand can rotate properly
         pub fn update(&mut self, newphysics: PhysicsController) {
@@ -223,11 +209,6 @@ pub mod portal_controller {
                 if portal_point.is_some() && rotation_point.is_some() {
                     let pp = portal_point.unwrap();
                     let rp = rotation_point.unwrap();
-                    if ((pp.0 - self.portals[1-index].x).powf(2.0) + (pp.1 - self.portals[1-index].y).powf(2.0)).powf(0.5) < 90.0 {
-                        self.last_portal_used = index as i8;
-                        self.last_portal_time = SystemTime::now();
-                        return 0;
-                    }
                     // on the left or right wall
                     let rot = if rp.0 == pp.0 {
                         // left wall
@@ -242,7 +223,7 @@ pub mod portal_controller {
                         }
                         0.0
                     }
-                    // on the floor or ceiling
+                    // on the floor or cieling
                     else if rp.1 > pp.1-1.0 || rp.1 < pp.1+1.0 {
                         // cieling
                         if (self.wand_rotation >= 180.0 && self.wand_rotation < 270.0) || (self.wand_rotation > -90.0 && self.wand_rotation <= 0.0) {
@@ -289,10 +270,6 @@ pub mod portal_controller {
         pub fn close_all(&mut self) {
             for i in 0..self.portals.len() {
                 self.portals[i].close();
-                self.portal_colliders[i].set_x(-100.0);
-                self.portal_colliders[i].set_y(-100.0);
-                self.portal_colliders[i].set_width(50.0);
-                self.portal_colliders[i].set_height(90.0);
             }
         }
     }
