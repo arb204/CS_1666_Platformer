@@ -24,6 +24,7 @@ use crate::player::player::Player;
 use crate::portal_controller::portal_controller::Portal;
 use crate::portal_controller::portal_controller::PortalController;
 use crate::rect_collider::rect_collider::RectCollider;
+use crate::object_controller::object_controller::ObjectController;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -64,6 +65,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
     let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
+    let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
     let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
     let blue_portal = Portal::new(0);
@@ -83,6 +85,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
 
     let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
+
+    let block = ObjectController::new(block_collider);
 
     let mut flip = false;
 
@@ -139,6 +143,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         draw_surface(&mut wincan, &portal_surface, 0, 720-TILE_SIZE as i32, 20, 1);
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
+
+        draw_block(&mut wincan, &block);
 
         // draw_collision_boxes(&mut wincan, &player1);
 
@@ -210,7 +216,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     Ok(())
 }
 
-fn render_player(wincan: &mut WindowCanvas, mut player1: &mut Player, mut flip: bool) -> Result<(), String>{
+fn render_player(wincan: &mut WindowCanvas, player1: &mut Player, flip: bool) -> Result<(), String>{
     wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
 }
 
@@ -243,6 +249,11 @@ fn draw_collision_boxes(wincan: &mut WindowCanvas, player: &Player) {
     wincan.draw_rect(Rect::new(player.collider.x() as i32, player.collider.y() as i32, player.collider.width() as u32, player.collider.height() as u32)).ok();
     wincan.draw_rect(Rect::new(player.portal.portal_colliders[0].x() as i32, player.portal.portal_colliders[0].y() as i32, player.portal.portal_colliders[0].width() as u32, player.portal.portal_colliders[0].height() as u32)).ok();
     wincan.draw_rect(Rect::new(player.portal.portal_colliders[1].x() as i32, player.portal.portal_colliders[1].y() as i32, player.portal.portal_colliders[1].width() as u32, player.portal.portal_colliders[1].height() as u32)).ok();
+}
+
+fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController) {
+    wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
+    wincan.fill_rect(Rect::new(block.x() as i32, block.y() as i32, TILE_SIZE/2, TILE_SIZE/2)).ok();
 }
 
 fn draw_stone_floor(wincan: &mut WindowCanvas, stone_sprite: &Texture) {
