@@ -39,7 +39,7 @@ pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
     //this function returns a list of the different objects in our scene
     //separated into the different parameters for each object
     let mut results: Vec<Vec<String>> = vec!();
-    for a in fs::read_to_string("src/levels/".to_owned()+filename).unwrap().split("\r\n").collect::<Vec<&str>>() {
+    for a in fs::read_to_string("src/levels/".to_owned()+filename).unwrap().split("\n").collect::<Vec<&str>>() {
         let mut result = a.split("-").collect::<Vec<&str>>();
         let mut newresult: Vec<String> = vec!();
         for r in result {
@@ -280,9 +280,12 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         thread::sleep(Duration::from_millis(1000/frame_rate));
     }
 
-    show_credits(wincan);
-  
-    // Out of game loop, return Ok
+
+    //show_credits(wincan);
+
+    //show_credits(wincan);
+
+
     Ok(())
 }
 
