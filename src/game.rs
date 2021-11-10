@@ -183,9 +183,18 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             NetworkingMode::Receive => {
                 let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34255").unwrap();
-                let player_pos = networking::receive_data(&mut socket);
+                let player_pos = networking::receive_player_data(&mut socket);
                 let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
+
+                let portal_pos = networking::receive_portal_data(&mut socket);
+                let posprite = texture_creator.load_texture("assets/sprite_sheets/portal-sprite-sheet.png").unwrap();
+                
+                /*for p in &player1.portal.portals {
+                    wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
+                }*/
+                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[0].color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
+                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
         render_player(&mut wincan, &mut player1, flip)?;
@@ -206,7 +215,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         thread::sleep(Duration::from_millis(1000/frame_rate));
     }
 
-    // Out of game loop, return Ok
+    // Out of game loop, return O
     Ok(())
 }
 
