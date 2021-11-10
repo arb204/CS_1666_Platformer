@@ -103,8 +103,19 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'gameloop,
+                Event::KeyDown{keycode: Some(Keycode::S), ..} => 
+                {
+                    if block.carried() {
+                        block.put_down(&player1);
+                    }
+                    else if player1.collider.is_touching(&block.collider()) {
+                        block.picked_up(&player1);
+                    }
+                },
                 _ => {},
             }
+
+            
         }
 
         let keystate: HashSet<Keycode> = event_pump
@@ -161,7 +172,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             flip
         };
 
-        block.update();
+        block.update(&player1);
 
         // create the portals
         if event_pump.mouse_state().left() {
@@ -242,14 +253,6 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_clic
         *first_left_click = true;
         *first_right_click = true;
         player.portal.can_teleport = 0;
-    }
-    if keystate.contains(&Keycode::S) {
-        if block.carried() {
-            block.put_down(&player);
-        }
-        else if player.collider.is_touching(&block.collider()) {
-            block.picked_up(&player);
-        }
     }
 }
 
