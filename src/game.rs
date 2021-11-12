@@ -39,7 +39,15 @@ pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
     //this function returns a list of the different objects in our scene
     //separated into the different parameters for each object
     let mut results: Vec<Vec<String>> = vec!();
-    for a in fs::read_to_string("src/levels/".to_owned()+filename).unwrap().split("\n").collect::<Vec<&str>>() {
+    let os_specific_linebreak = if std::env::consts::OS == "windows" {
+        "\r\n"
+    } else {
+        "\n"
+    };
+    for a in fs::read_to_string("src/levels/".to_owned()+filename)
+        .unwrap()
+        .split(os_specific_linebreak)
+        .collect::<Vec<&str>>() {
         let mut result = a.split("-").collect::<Vec<&str>>();
         let mut newresult: Vec<String> = vec!();
         for r in result {
