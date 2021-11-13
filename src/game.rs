@@ -71,7 +71,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
-    let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
+    let mut player1 = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
 
     let mut flip = false;
 
@@ -236,7 +236,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
-        render_player(&mut wincan, &mut player1, flip)?;
+        render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
 
         for p in &player1.portal.portals {
             wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
@@ -257,8 +257,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     Ok(())
 }
 
-fn render_player(wincan: &mut WindowCanvas, mut player1: &mut Player, mut flip: bool) -> Result<(), String>{
-    wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
+fn render_player(texture: &Texture, wincan: &mut WindowCanvas, mut player1: &mut Player, mut flip: bool) -> Result<(), String>{
+    wincan.copy_ex(&texture, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
 }
 
 fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, player_pos: (f32, f32), flip: bool) -> Result<(), String> {
