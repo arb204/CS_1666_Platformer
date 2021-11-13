@@ -36,17 +36,17 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let frame_rate = 60;
 
     // declare textures here
-    let bluewand = texture_creator.load_texture("assets/single_assets/wand_sprite_blue.png").unwrap();
-    let orangewand = texture_creator.load_texture("assets/single_assets/wand_sprite_orange.png").unwrap();
-    let cursor = texture_creator.load_texture("assets/single_assets/cursor.png").unwrap();
-    let portalsprite = texture_creator.load_texture("assets/sprite_sheets/portal-sprite-sheet.png").unwrap();
-    let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
+    let bluewand = texture_creator.load_texture("assets/in_game/player/wand/blue/wand_sprite_blue.png").unwrap();
+    let orangewand = texture_creator.load_texture("assets/in_game/player/wand/orange/wand_sprite_orange.png").unwrap();
+    let cursor = texture_creator.load_texture("assets/in_game/cursor/cursor.png").unwrap();
+    let portalsprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
+    let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
     let stone_sprite = texture_creator.load_texture("assets/single_assets/purple_floor_tile.png").unwrap();
-    let door_sheet = texture_creator.load_texture("assets/sprite_sheets/doors_sprite_sheet.png").unwrap();
-    let level_cleared_msg_sprite = texture_creator.load_texture("assets/single_assets/level_cleared_msg.png").unwrap();
-    let castle_bg = texture_creator.load_texture("assets/single_assets/castle-bg.png").unwrap();
-    let nonportal_surface = texture_creator.load_texture("assets/single_assets/stone_brick_64x64.png").unwrap();
-    let portal_surface = texture_creator.load_texture("assets/single_assets/portal_brick_64x64.png").unwrap();
+    let door_sheet = texture_creator.load_texture("assets/in_game/level/door/doors_sprite_sheet.png").unwrap();
+    let level_cleared_msg_sprite = texture_creator.load_texture("assets/in_game/message/level_cleared/level_cleared_msg.png").unwrap();
+    let castle_bg = texture_creator.load_texture("assets/in_game/level/background/castle/castle-bg.png").unwrap();
+    let nonportal_surface = texture_creator.load_texture("assets/in_game/level/brick/nonportal/stone_brick_64x64.png").unwrap();
+    let portal_surface = texture_creator.load_texture("assets/in_game/level/brick/portal/portal_brick_64x64.png").unwrap();
 
     // declare colliders here
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
@@ -223,11 +223,11 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34255").unwrap();
                 let player_pos = networking::receive_player_data(&mut socket);
-                let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
+                let p1sprite = texture_creator.load_texture("assets/in_game/player/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
 
                 let portal_pos = networking::receive_portal_data(&mut socket);
-                let posprite = texture_creator.load_texture("assets/sprite_sheets/portal-sprite-sheet.png").unwrap();
+                let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
                 
                 /*for p in &player1.portal.portals {
                     wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;

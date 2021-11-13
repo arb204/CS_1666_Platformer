@@ -11,7 +11,7 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 {
     let texture_creator = wincan.texture_creator();
 
-    let start = texture_creator.load_texture("assets/single_assets/start_screen.png").unwrap();
+    let start = texture_creator.load_texture("assets/out_of_game/menu/start_screen.png").unwrap();
 
     wincan.copy(&start, None, None).ok();
     wincan.present();
