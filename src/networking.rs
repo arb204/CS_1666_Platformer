@@ -1,7 +1,6 @@
 use std::borrow::Borrow;
 use std::net::UdpSocket;
-
-use crate::player::player::Player;
+use crate::player::Player;
 
 #[derive(Clone, Copy)]
 pub(crate) enum NetworkingMode {

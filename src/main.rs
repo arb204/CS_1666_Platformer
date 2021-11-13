@@ -1,9 +1,10 @@
 extern crate sdl2;
 
 use std::env;
+
+use sdl2::{EventPump, Sdl};
 use sdl2::mouse::MouseUtil;
 use sdl2::render::WindowCanvas;
-use sdl2::{EventPump, Sdl};
 
 mod credits;
 mod game;
@@ -17,6 +18,7 @@ mod networking;
 mod hint_system;
 mod object_controller;
 mod portal_traversible;
+mod levels;
 
 fn main() {
 	let (sdl_cxt, wincan) = setup_sdl_and_window();
