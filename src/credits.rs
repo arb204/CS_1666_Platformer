@@ -1,8 +1,9 @@
-use sdl2::render::WindowCanvas;
+use std::thread;
+use std::time::Duration;
+
 use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
-use std::time::Duration;
-use std::thread;
+use sdl2::render::WindowCanvas;
 
 pub(crate) fn show_credits(mut wincan: WindowCanvas) {
     let texture_creator = wincan.texture_creator();
@@ -64,5 +65,4 @@ pub(crate) fn show_credits(mut wincan: WindowCanvas) {
     wincan.present();
 
     thread::sleep(Duration::from_millis(1500));
-
 }

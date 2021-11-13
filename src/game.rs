@@ -1,11 +1,7 @@
-
 use std::collections::HashSet;
-
-
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
-use std::fs;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -15,17 +11,14 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 
-use crate::animation_controller::animation_controller::Anim;
-use crate::animation_controller::animation_controller::AnimController;
-use crate::animation_controller::animation_controller::Condition;
-use crate::networking;
-use crate::networking::NetworkingMode;
-use crate::physics_controller::physics_controller::PhysicsController;
-use crate::player::player::Player;
-use crate::portal_controller::portal_controller::Portal;
-use crate::portal_controller::portal_controller::PortalController;
-use crate::rect_collider::rect_collider::RectCollider;
-use crate::credits::show_credits;
+use crate::{levels, networking};
+use crate::animation_controller::Anim;
+use crate::animation_controller::AnimController;
+use crate::animation_controller::Condition;
+use crate::physics_controller::PhysicsController;
+use crate::player::Player;
+use crate::portal_controller::{Portal, PortalController};
+use crate::rect_collider::RectCollider;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -34,31 +27,9 @@ const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 
-// load_level: used to load a level (UNUSED FOR NOW)
-pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
-    //this function returns a list of the different objects in our scene
-    //separated into the different parameters for each object
-    let mut results: Vec<Vec<String>> = vec!();
-    let os_specific_linebreak = if std::env::consts::OS == "windows" {
-        "\r\n"
-    } else {
-        "\n"
-    };
-    for a in fs::read_to_string("src/levels/".to_owned()+filename)
-        .unwrap()
-        .split(os_specific_linebreak)
-        .collect::<Vec<&str>>() {
-        let mut result = a.split("-").collect::<Vec<&str>>();
-        let mut newresult: Vec<String> = vec!();
-        for r in result {
-            newresult.push(r.to_string());
-        }
-        results.push(newresult);
-    }
-    results
-}
-
-pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode) -> Result<(), String> {
+pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
+                        mouse: MouseUtil, network_mode: networking::NetworkingMode)
+    -> Result<(), String> {
     mouse.show_cursor(false);
     let texture_creator = wincan.texture_creator();
 
@@ -118,7 +89,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let final_level = 2; // what level is the last one?
 
 
-    let mut level = parse_level("level0.txt");
+    let mut level = levels::parse_level("level0.txt");
 
     // we read in the level from a file and add the necessary colliders and stuff
     for obj in level.iter() {
@@ -175,13 +146,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             // this is what I'm going with until I figure out how
             // to do "level"+current_level+".txt"
             let current_level_file = &format!("level{level}.txt", level = current_level);
-            level = parse_level(current_level_file);
-            /*if current_level == 1 {
-                level = parse_level("level1.txt");
-            }
-            else if current_level == 2 {
-                level = parse_level("level2.txt");
-            }*/
+            level = levels::parse_level(current_level_file);
+
             // we read in the next level
             for obj in level.iter() {
                 if obj[0] == "start" {
@@ -248,12 +214,12 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         // now that updates are processed, we do networking and then render
         match network_mode {
-            NetworkingMode::Send => {
+            networking::NetworkingMode::Send => {
                 let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34254").unwrap();
                 networking::send_data(&mut player1, &socket, flip);
             }
-            NetworkingMode::Receive => {
+            networking::NetworkingMode::Receive => {
                 let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34255").unwrap();
                 let player_pos = networking::receive_player_data(&mut socket);
@@ -287,12 +253,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/frame_rate));
     }
-
-
-    //show_credits(wincan);
-
-    //show_credits(wincan);
-
 
     Ok(())
 }

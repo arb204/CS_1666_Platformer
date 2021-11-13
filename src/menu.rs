@@ -1,9 +1,8 @@
-use sdl2::render::WindowCanvas;
+use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
-use sdl2::event::Event;
 use sdl2::mouse::MouseUtil;
-
+use sdl2::render::WindowCanvas;
 
 use crate::game::show_game;
 use crate::networking::NetworkingMode;
