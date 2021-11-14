@@ -10,7 +10,7 @@ use sdl2::render::WindowCanvas;
 use crate::renderer::Renderer;
 
 mod credits;
-mod game;
+mod old_game;
 mod player;
 mod physics_controller;
 mod rect_collider;
@@ -23,8 +23,9 @@ mod object_controller;
 mod portal_traversible;
 mod levels;
 mod renderer;
+mod game;
 
-struct Config {
+pub struct Config {
 	mode: networking::NetworkingMode
 }
 
@@ -40,47 +41,47 @@ impl Config {
 	}
 }
 
-// Maybe someone else has a better name than MainState.
-enum MainState {
+pub enum ProgramState {
 	Quit,
-	Pause,
 	Continue,
 }
 
 fn main() {
 	let config = Config::new().unwrap();
-	let (wincan, mut event_pump, mouse) = setup_wincan_and_event_pump().unwrap_or_else(|err| {
-		println!("Error setting up sdl: {}", err);
+	let (wincan, mut event_pump, mouse) = setup_sdl().unwrap_or_else(|err| {
+		eprintln!("Error setting up sdl: {}", err);
 		process::exit(1);
 	});
-	let renderer = Renderer::new(wincan).unwrap_or_else(|err| {
-		println!("Error creating renderer: {}", err);
+	let mut renderer = Renderer::new(wincan).unwrap_or_else(|err| {
+		eprintln!("Error creating renderer: {}", err);
 		process::exit(1);
 	});
+	let mut game = game::Game::new(config, event_pump, mouse);
+
+	if let Err(e) = renderer.display_start_screen() {
+		eprintln!("Error displaying start screen: {}", e);
+		process::exit(1);
+	};
 
 	'game_loop: loop {
-		if quit(&mut event_pump) {
-			break 'game_loop;
+
+		match game.update() {
+			Ok(ProgramState::Quit) => { process::exit(0); }
+			Ok(ProgramState::Continue) => {}
+			Err(e) => {
+				eprintln!("Game error: {}", e);
+				process::exit(1);
+			}
 		}
 
-		game.update(&event_pump, &mouse);
-
-		renderer.display(&game);
+		if let Err(e) = renderer.display(&game) {
+			eprintln!("Renderer error: {}", e);
+			process::exit(1);
+		}
 	}
 }
 
-fn quit(event_pump: &mut EventPump) -> bool {
-	let mut should_quit = false;
-	for event in event_pump.poll_iter() {
-		match event {
-			Event::Quit { .. } => { should_quit = true }
-			_ => {}
-		}
-	}
-	should_quit
-}
-
-fn setup_wincan_and_event_pump() -> Result<(WindowCanvas, EventPump, MouseUtil), Box<dyn Error>> {
+fn setup_sdl() -> Result<(WindowCanvas, EventPump, MouseUtil), Box<dyn Error>> {
 	let sdl_cxt = sdl2::init()?;
 	let event_pump = sdl_cxt.event_pump()?;
 	let mouse = sdl_cxt.mouse();
