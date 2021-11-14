@@ -1,21 +1,22 @@
-use sdl2::render::WindowCanvas;
+use std::thread;
+use std::time::Duration;
+
 use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
-use std::time::Duration;
-use std::thread;
+use sdl2::render::WindowCanvas;
 
 pub(crate) fn show_credits(mut wincan: WindowCanvas) {
     let texture_creator = wincan.texture_creator();
 
-    let andrew = texture_creator.load_texture("assets/credits/andrew_credits.png").unwrap();
-    let kira = texture_creator.load_texture("assets/credits/kira_credits.jpg").unwrap();
-    let josh = texture_creator.load_texture("assets/credits/josh_credits.png").unwrap();
-    let alvyn = texture_creator.load_texture("assets/credits/alvyn_credits.png").unwrap();
-    let greg = texture_creator.load_texture("assets/credits/greg_credits.jpg").unwrap();
-    let jake = texture_creator.load_texture("assets/credits/jake_credits.jpeg").unwrap();
-    let bryce = texture_creator.load_texture("assets/credits/bryce_credits.png").unwrap();
-    let austin = texture_creator.load_texture("assets/credits/austin_credits.png").unwrap();
-    let evan = texture_creator.load_texture("assets/credits/evan_credits.png").unwrap();
+    let andrew = texture_creator.load_texture("assets/out_of_game/credits/andrew_credits.png").unwrap();
+    let kira = texture_creator.load_texture("assets/out_of_game/credits/kira_credits.jpg").unwrap();
+    let josh = texture_creator.load_texture("assets/out_of_game/credits/josh_credits.png").unwrap();
+    let alvyn = texture_creator.load_texture("assets/out_of_game/credits/alvyn_credits.png").unwrap();
+    let greg = texture_creator.load_texture("assets/out_of_game/credits/greg_credits.jpg").unwrap();
+    let jake = texture_creator.load_texture("assets/out_of_game/credits/jake_credits.jpeg").unwrap();
+    let bryce = texture_creator.load_texture("assets/out_of_game/credits/bryce_credits.png").unwrap();
+    let austin = texture_creator.load_texture("assets/out_of_game/credits/austin_credits.png").unwrap();
+    let evan = texture_creator.load_texture("assets/out_of_game/credits/evan_credits.png").unwrap();
 
     wincan.set_draw_color(Color::RGBA(0, 128, 128, 255));
     wincan.clear();
@@ -64,5 +65,4 @@ pub(crate) fn show_credits(mut wincan: WindowCanvas) {
     wincan.present();
 
     thread::sleep(Duration::from_millis(1500));
-
 }

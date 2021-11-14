@@ -1,7 +1,4 @@
-
 use std::collections::HashSet;
-
-
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
@@ -14,17 +11,15 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 
-use crate::animation_controller::animation_controller::Anim;
-use crate::animation_controller::animation_controller::AnimController;
-use crate::animation_controller::animation_controller::Condition;
-use crate::networking;
-use crate::networking::NetworkingMode;
-use crate::physics_controller::physics_controller::PhysicsController;
-use crate::player::player::Player;
-use crate::portal_controller::portal_controller::Portal;
-use crate::portal_controller::portal_controller::PortalController;
-use crate::rect_collider::rect_collider::RectCollider;
-use crate::object_controller::object_controller::ObjectController;
+use crate::{levels, networking};
+use crate::animation_controller::Anim;
+use crate::animation_controller::AnimController;
+use crate::animation_controller::Condition;
+use crate::physics_controller::PhysicsController;
+use crate::player::Player;
+use crate::portal_controller::{Portal, PortalController};
+use crate::rect_collider::RectCollider;
+use crate::object_controller::ObjectController;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -33,44 +28,38 @@ const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 
-// load_level: used to load a level (UNUSED FOR NOW)
-pub(crate) fn _load_level() { }
-
-pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode) -> Result<(), String> {
+pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
+                        mouse: MouseUtil, network_mode: networking::NetworkingMode)
+    -> Result<(), String> {
     mouse.show_cursor(false);
     let texture_creator = wincan.texture_creator();
 
     let frame_rate = 60;
 
     // declare textures here
-    let bluewand = texture_creator.load_texture("assets/single_assets/wand_sprite_blue.png").unwrap();
-    let orangewand = texture_creator.load_texture("assets/single_assets/wand_sprite_orange.png").unwrap();
-    let cursor = texture_creator.load_texture("assets/single_assets/cursor.png").unwrap();
-    let portalsprite = texture_creator.load_texture("assets/sprite_sheets/portal-sprite-sheet.png").unwrap();
-    let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
+    let bluewand = texture_creator.load_texture("assets/in_game/player/wand/blue/wand_sprite_blue.png").unwrap();
+    let orangewand = texture_creator.load_texture("assets/in_game/player/wand/orange/wand_sprite_orange.png").unwrap();
+    let cursor = texture_creator.load_texture("assets/in_game/cursor/cursor.png").unwrap();
+    let portalsprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
+    let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
     let stone_sprite = texture_creator.load_texture("assets/single_assets/purple_floor_tile.png").unwrap();
-    let door_sheet = texture_creator.load_texture("assets/sprite_sheets/doors_sprite_sheet.png").unwrap();
-    let level_cleared_msg_sprite = texture_creator.load_texture("assets/single_assets/level_cleared_msg.png").unwrap();
-    let castle_bg = texture_creator.load_texture("assets/single_assets/castle-bg.png").unwrap();
-    let nonportal_surface = texture_creator.load_texture("assets/single_assets/stone_brick_64x64.png").unwrap();
-    let portal_surface = texture_creator.load_texture("assets/single_assets/portal_brick_64x64.png").unwrap();
+    let door_sheet = texture_creator.load_texture("assets/in_game/level/door/doors_sprite_sheet.png").unwrap();
+    let level_cleared_msg_sprite = texture_creator.load_texture("assets/in_game/message/level_cleared/level_cleared_msg.png").unwrap();
+    let castle_bg = texture_creator.load_texture("assets/in_game/level/background/castle/castle-bg.png").unwrap();
+    let nonportal_surface = texture_creator.load_texture("assets/in_game/level/brick/nonportal/stone_brick_64x64.png").unwrap();
+    let portal_surface = texture_creator.load_texture("assets/in_game/level/brick/portal/portal_brick_64x64.png").unwrap();
 
     // declare colliders here
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
-    let floor_collider = RectCollider::new(0.0, (720 - TILE_SIZE) as f32, 1280.0, TILE_SIZE as f32);
-    let ceiling_collider = RectCollider::new(0.0, 0.0, 1280.0, TILE_SIZE as f32);
-    let left_wall_collider = RectCollider::new(0.0, 0.0, TILE_SIZE as f32, 720.0);
-    let right_wall_collider = RectCollider::new((1280-(TILE_SIZE as i32)) as f32, 0.0, TILE_SIZE as f32, 720.0);
-    let mid_platform_collider = RectCollider::new(544.0, 400.0, ((3*TILE_SIZE) as i32) as f32, ((4*TILE_SIZE) as i32) as f32);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
     let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
-    let p1physcon = PhysicsController::new(75.0, 500.0, 6.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider, mid_platform_collider));
+    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
-    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(floor_collider, left_wall_collider, right_wall_collider, ceiling_collider), vec!(mid_platform_collider));
+    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
 
     //this is a list of the animations we'll use for the player
     //the first parameter is the frames to use
@@ -80,11 +69,11 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon.clone()));
     let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon.clone()));
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
-    //let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 0".to_string(), 3, p1physcon));
+    let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
 
-    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
+    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
-    let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
+    let mut player1 = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
 
     let mut block = ObjectController::new(block_collider);
 
@@ -98,6 +87,29 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     // used to test the orientation of the portals for teleporting
     let mut portal_blue_side = -1;
     let mut portal_orange_side = -1;
+
+    //level data
+    let mut current_level = 0; // what level are we on?
+    let final_level = 2; // what level is the last one?
+
+
+    let mut level = levels::parse_level("level0.txt");
+
+    // we read in the level from a file and add the necessary colliders and stuff
+    for obj in level.iter() {
+        if obj[0] == "start" {
+            player1.physics.set_x(obj[1].parse::<i32>().unwrap() as f32);
+            player1.physics.set_y(obj[2].parse::<i32>().unwrap() as f32);
+        }
+        if obj[0] == "portalblock" {
+            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+            player1.add_collider(new_collider, true);
+        }
+        if obj[0] == "nonportalblock" {
+            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+            player1.add_collider(new_collider, false);
+        }
+    }
 
     'gameloop: loop {
         for event in event_pump.poll_iter() {
@@ -114,8 +126,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 },
                 _ => {},
             }
-
-            
         }
 
         let keystate: HashSet<Keycode> = event_pump
@@ -142,16 +152,43 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         }
         if level_cleared {
             draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
-            //level_cleared = false;
+            //this is just until we get the level changing logic completed
+            if current_level == final_level { break 'gameloop; }
+            player1.reset_colliders();
+            current_level += 1;
+            // this is what I'm going with until I figure out how
+            // to do "level"+current_level+".txt"
+            let current_level_file = &format!("level{level}.txt", level = current_level);
+            level = levels::parse_level(current_level_file);
+
+            // we read in the next level
+            for obj in level.iter() {
+                if obj[0] == "start" {
+                    player1.physics.set_x(obj[1].parse::<i32>().unwrap() as f32);
+                    player1.physics.set_y(obj[2].parse::<i32>().unwrap() as f32);
+                }
+                if obj[0] == "portalblock" {
+                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+                    player1.add_collider(new_collider, true);
+                }
+                if obj[0] == "nonportalblock" {
+                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+                    player1.add_collider(new_collider, false);
+                }
+            }
+            player1.unstop();
+            level_cleared = false;
         }
 
         // draw the surfaces
-        draw_surface(&mut wincan, &portal_surface, 0, 0, 1, 11);
-        draw_surface(&mut wincan, &portal_surface, 0, 0, 20, 1);
-        draw_surface(&mut wincan, &portal_surface, 1280-TILE_SIZE as i32, 0, 1, 11);
-        draw_surface(&mut wincan, &nonportal_surface, 544, 400, 3, 5);
-
-        draw_surface(&mut wincan, &portal_surface, 0, 720-TILE_SIZE as i32, 20, 1);
+        for obj in level.iter() {
+            if obj[0] == "portalblock" {
+                draw_surface(&mut wincan, &portal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+            }
+            if obj[0] == "nonportalblock" {
+                draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+            }
+        }
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
@@ -194,20 +231,30 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         // now that updates are processed, we do networking and then render
         match network_mode {
-            NetworkingMode::Send => {
+            networking::NetworkingMode::Send => {
                 let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34254").unwrap();
                 networking::send_data(&mut player1, &socket, flip);
             }
-            NetworkingMode::Receive => {
+            networking::NetworkingMode::Receive => {
                 let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34255").unwrap();
-                let player_pos = networking::receive_data(&mut socket);
-                let p1sprite = texture_creator.load_texture("assets/sprite_sheets/characters-sprites_condensed.png").unwrap();
+                let mut buf = networking::get_packet_buffer(&mut socket);
+                let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
+                let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
+
+                let portal_pos = networking::get_portal_position_and_flip(&mut socket, &mut buf);
+                let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
+                
+                /*for p in &player1.portal.portals {
+                    wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
+                }*/
+                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[0].color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
+                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
-        render_player(&mut wincan, &mut player1, flip)?;
+        render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
 
         for p in &player1.portal.portals {
             wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
@@ -225,12 +272,11 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         thread::sleep(Duration::from_millis(1000/frame_rate));
     }
 
-    // Out of game loop, return Ok
     Ok(())
 }
 
-fn render_player(wincan: &mut WindowCanvas, player1: &mut Player, flip: bool) -> Result<(), String>{
-    wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
+fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, flip: bool) -> Result<(), String>{
+    wincan.copy_ex(&texture, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
 }
 
 fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, player_pos: (f32, f32), flip: bool) -> Result<(), String> {
