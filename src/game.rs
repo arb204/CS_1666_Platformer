@@ -223,7 +223,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34255").unwrap();
                 let player_pos = networking::receive_player_data(&mut socket);
-                let p1sprite = texture_creator.load_texture("assets/in_game/player/characters-sprites_condensed.png").unwrap();
+                let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
 
                 let portal_pos = networking::receive_portal_data(&mut socket);

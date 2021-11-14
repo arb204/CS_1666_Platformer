@@ -40,11 +40,6 @@ fn get_player_position_and_flip(socket: &mut UdpSocket) -> (f32, f32) {
 
     let y = f32::from_le_bytes(ypos);
     
-    //let x = f32::from_le_bytes(xbytes);
-    //let (_amt, _src) = socket.recv_from(&mut buf).unwrap();
-
-    //let y = f32::from_le_bytes(ybytes);
-    // TODO: add getting flip
     (x, y)
 }
 
@@ -80,14 +75,12 @@ pub(crate) fn send_data(player: &mut Player, socket: &UdpSocket, _flip: bool) {
     let buf = [xpos, ypos].concat();
     socket.send(&buf);
     
-    /*
-    socket.send(player.physics.x().to_ne_bytes().borrow());
-    socket.send(player.physics.y().to_ne_bytes().borrow());
-
     for p in &player.portal.portals {
         socket.send(p.x().to_ne_bytes().borrow());
         socket.send(p.y().to_ne_bytes().borrow());
     }
+    
+    
 
     
 }
