@@ -45,6 +45,7 @@ impl Game {
         }
         Ok(ProgramState::Continue)
     }
+
     fn handle_single_player(&self) -> Result<ProgramState, Box<dyn Error>> {
         todo!()
     }
