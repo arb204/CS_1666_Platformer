@@ -4,5 +4,5 @@ portalblock-288-366-5-1
 nonportalblock-1216-0-1-12
 nonportalblock-544-272-3-6
 nonportalblock-0-656-20-1
-nonportalblock-736-144-1-8
-start-75-500
+portalglass-672-64-1-3
+start-100-500

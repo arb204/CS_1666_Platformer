@@ -48,6 +48,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let castle_bg = texture_creator.load_texture("assets/in_game/level/background/castle/castle-bg.png").unwrap();
     let nonportal_surface = texture_creator.load_texture("assets/in_game/level/brick/nonportal/stone_brick_64x64.png").unwrap();
     let portal_surface = texture_creator.load_texture("assets/in_game/level/brick/portal/portal_brick_64x64.png").unwrap();
+    let portal_glass = texture_creator.load_texture("assets/in_game/level/brick/portal_glass.png").unwrap();
 
     // declare colliders here
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
@@ -98,16 +99,21 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     // we read in the level from a file and add the necessary colliders and stuff
     for obj in level.iter() {
         if obj[0] == "start" {
-            player1.physics.set_x(obj[1].parse::<i32>().unwrap() as f32);
-            player1.physics.set_y(obj[2].parse::<i32>().unwrap() as f32);
+            player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
+            player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
+            player1.respawn();
         }
         if obj[0] == "portalblock" {
             let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, true);
+            player1.add_collider(new_collider, "portalblock");
         }
         if obj[0] == "nonportalblock" {
             let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, false);
+            player1.add_collider(new_collider, "nonportalblock");
+        }
+        if obj[0] == "portalglass" {
+            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+            player1.add_collider(new_collider, "portalglass");
         }
     }
 
@@ -164,16 +170,21 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             // we read in the next level
             for obj in level.iter() {
                 if obj[0] == "start" {
-                    player1.physics.set_x(obj[1].parse::<i32>().unwrap() as f32);
-                    player1.physics.set_y(obj[2].parse::<i32>().unwrap() as f32);
+                    player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
+                    player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
+                    player1.respawn();
                 }
                 if obj[0] == "portalblock" {
                     let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, true);
+                    player1.add_collider(new_collider, "portalblock");
                 }
                 if obj[0] == "nonportalblock" {
                     let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, false);
+                    player1.add_collider(new_collider, "nonportalblock");
+                }
+                if obj[0] == "portalglass" {
+                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
+                    player1.add_collider(new_collider, "portalglass");
                 }
             }
             player1.unstop();
@@ -188,7 +199,19 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             if obj[0] == "nonportalblock" {
                 draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
             }
+            if obj[0] == "portalglass" {
+                draw_surface(&mut wincan, &portal_glass, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+            }
         }
+
+        if !player1.is_dead() && (player1.physics.x() < 0.0 || player1.physics.x() > 1280.0 || player1.physics.y() < 0.0 || player1.physics.y() > 720.0) {
+            player1.kill();
+        }
+
+        if player1.is_dead() {
+            player1.respawn();
+        }
+        
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
@@ -213,20 +236,10 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         // create the portals
         if event_pump.mouse_state().left() {
-            if player1.portal.open_portal(0, &mut portal_blue_side, &mut portal_orange_side) == 1 {
-                if first_left_click {
-                    player1.portal.can_teleport += 1;
-                    first_left_click = false;
-                }
-            }
+            player1.portal.open_portal(0, &mut portal_blue_side, &mut portal_orange_side);
         }
         if event_pump.mouse_state().right() {
-            if player1.portal.open_portal(1, &mut portal_blue_side, &mut portal_orange_side) == 1 {
-                if first_right_click {
-                    player1.portal.can_teleport += 1;
-                    first_right_click = false;
-                }
-            }
+            player1.portal.open_portal(1, &mut portal_blue_side, &mut portal_orange_side);
         }
 
         // now that updates are processed, we do networking and then render
@@ -254,6 +267,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
+
         render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
 
         for p in &player1.portal.portals {
@@ -296,9 +310,6 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_clic
     }
     if keystate.contains(&Keycode::LShift) {
         player.portal.close_all();
-        *first_left_click = true;
-        *first_right_click = true;
-        player.portal.can_teleport = 0;
     }
 }
 

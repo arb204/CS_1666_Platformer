@@ -16,8 +16,7 @@ pub struct PortalController {
     valid_portal_surfaces: Vec<RectCollider>,
     invalid_portal_surfaces: Vec<RectCollider>,
     has_teleported_blue: i32,
-    has_teleported_orange: i32,
-    pub can_teleport: i32
+    has_teleported_orange: i32
 }
 
 impl PortalController {
@@ -37,8 +36,7 @@ impl PortalController {
             valid_portal_surfaces: _surfaces,
             invalid_portal_surfaces: _inval_surfaces,
             has_teleported_blue: 0,
-            has_teleported_orange: 0,
-            can_teleport: 0,
+            has_teleported_orange: 0
         }
     }
 
@@ -82,7 +80,13 @@ impl PortalController {
     // teleport: teleports the player to a specific portal (UNFINISHED)
     pub fn teleport(&mut self, player_collider: &mut RectCollider, player_physics: &mut PhysicsController, portal_blue_side: &i32, portal_orange_side: &i32) {
         // are both portals out? (aka, should the player be allowed to teleport?)
-        if self.can_teleport >= 2 {
+        let mut can_teleport = true;
+        for p in &self.portals {
+            if !p.is_open() { can_teleport = false; }
+        }
+
+        
+        if can_teleport {
             // used for converving momentum
             let mut speed = player_physics.speed();
             let mut fall_speed = player_physics.fall_speed();
@@ -325,6 +329,10 @@ impl Portal {
     /*pub fn set_x(&mut self, _x: f32) { self.x = _x; }
     pub fn set_y(&mut self, _y: f32) { self.y = _y; }
     pub fn set_rotation(&mut self, _rot: f32) { self.rotation = _rot; }*/
+
+    pub fn is_open(&self) -> bool {
+        self.x > 0.0 && self.y > 0.0
+    }
 
     // open: opens a new portal
     pub fn open(&mut self, new_x: f32, new_y: f32, new_rot: f32) {

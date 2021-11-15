@@ -9,7 +9,8 @@ pub struct Player {
     pub physics: PhysicsController,
     pub collider: RectCollider,
     pub anim: AnimController,
-    pub portal: PortalController
+    pub portal: PortalController,
+    dead: bool
 }
 
 impl Player {
@@ -20,9 +21,11 @@ impl Player {
             physics: _physics,
             collider: _collider,
             anim: _anim,
-            portal: _portal
+            portal: _portal,
+            dead: false
         }
     }
+    pub fn is_dead(&self) -> bool { self.dead }
 
     // update: handle all the updates we need
     pub fn update(&mut self) {
@@ -45,11 +48,11 @@ impl Player {
         self.portal.unfreeze();
     }
 
-    pub fn add_collider(&mut self, collider: RectCollider, valid: bool) {
+    pub fn add_collider(&mut self, collider: RectCollider, block_type: &str) {
         self.physics.add_collider(collider);
-        if valid {
+        if block_type == "portalblock" {
             self.portal.add_valid_surface(collider);
-        } else {
+        } else if block_type == "nonportalblock" {
             self.portal.add_invalid_surface(collider);
         }
     }
@@ -58,5 +61,19 @@ impl Player {
         self.physics.reset_colliders();
         self.portal.reset_surfaces();
         self.portal.close_all();
+    }
+
+    // kill: kill the player
+    pub fn kill(&mut self) {
+        self.portal.close_all();
+        self.dead = true;
+        self.physics.set_x(-300.0);
+        self.physics.set_y(-300.0);
+    }
+
+    // respawn: respawn the player
+    pub fn respawn(&mut self) {
+        self.dead = false;
+        self.physics.respawn();
     }
 }
