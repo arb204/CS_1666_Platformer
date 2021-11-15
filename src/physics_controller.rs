@@ -4,6 +4,8 @@ use crate::rect_collider::RectCollider;
 
 //#[derive(Copy, Clone)]
 pub struct PhysicsController {
+    start_x: f32,
+    start_y: f32,
     x: f32,
     y: f32,
     speed: f32,
@@ -27,6 +29,8 @@ impl PhysicsController {
         -> PhysicsController
     {
         PhysicsController {
+            start_x: 0.0,
+            start_y: 0.0,
             x: _x,
             y: _y,
             speed: 0.0,
@@ -47,6 +51,8 @@ impl PhysicsController {
     }
 
     //getters
+    pub fn start_x(&self) -> f32 { self.x }
+    pub fn start_y(&self) -> f32 { self.y }
     pub fn x(&self) -> f32 { self.x }
     pub fn y(&self) -> f32 { self.y }
     pub fn speed(&self) -> f32 { self.speed }
@@ -63,12 +69,18 @@ impl PhysicsController {
     pub fn reset_jumps(&mut self) { self.jumps_used = 0; }
     pub fn immobilize(&mut self) { self.can_move = false; }
     pub fn mobilize(&mut self) { self.can_move = true; }
+    pub fn set_start_x(&mut self, _x: f32) { self.start_x = _x; }
+    pub fn set_start_y(&mut self, _y: f32) { self.start_y = _y; }
     pub fn set_x(&mut self, _x: f32) {self.x = _x}
     pub fn set_y(&mut self, _y: f32) {self.y = _y}
     pub fn set_speed(&mut self, _speed: f32) {self.speed = _speed}
     pub fn set_fall_speed(&mut self, _fall_speed: f32) {self.fall_speed = _fall_speed}
     pub fn set_jumps_used(&mut self, _jumps_used: i8) { self.jumps_used = _jumps_used }
     pub fn reset_colliders(&mut self) { self.colliders = vec!(); }
+    pub fn respawn(&mut self) {
+        self.x = self.start_x;
+        self.y = self.start_y;
+    }
 
     pub fn add_collider(&mut self, new_collider: RectCollider) {
         self.colliders.push(new_collider);
@@ -177,39 +189,13 @@ impl PhysicsController {
             self.is_grounded = false;
         }
     }
-
-    //is_moving: returns true if our position was updated last frame, otherwise returns false
-    /*pub fn is_moving(&mut self) -> bool {
-        self.speed != 0.0 && self.fall_speed != 0.0
-    }*/
 }
-
-/*impl Copy for PhysicsController {
-    fn copy(&self) -> PhysicsController {
-        PhysicsController {
-            x: self.x,
-            y: self.y,
-            speed: self.speed,
-            max_speed: self.max_speed,
-            acceleration: self.acceleration,
-            jump_speed: self.jump_speed,
-            jumps_used: self.jumps_used,
-            last_jump_time: self.last_jump_time,
-            max_jumps: self._maxjumps,
-            stop_speed: self.stop_speed,
-            fall_speed: self.fall_speed,
-            gravity: self.gravity,
-            max_fall_speed: self.max_fall_speed,
-            is_grounded: self.is_grounded,
-            can_move: self.can_move,
-            colliders: self.colliders()
-        }
-    }
-}*/
 
 impl Clone for PhysicsController {
     fn clone(&self) -> PhysicsController {
         PhysicsController {
+            start_x: self.start_x,
+            start_y: self.start_y,
             x: self.x,
             y: self.y,
             speed: self.speed,
