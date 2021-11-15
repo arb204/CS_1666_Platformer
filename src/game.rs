@@ -19,6 +19,7 @@ use crate::physics_controller::PhysicsController;
 use crate::player::Player;
 use crate::portal_controller::{Portal, PortalController};
 use crate::rect_collider::RectCollider;
+use crate::object_controller::ObjectController;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -54,6 +55,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
     let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
+    let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
     let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!());
     let blue_portal = Portal::new(0);
@@ -70,9 +72,11 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
     let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
 
-    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump]);
+    let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
-    let mut player1 = Player::new(p1sprite, p1physcon, p1collider, p1anim, p1portalcon);
+    let mut player1 = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
+
+    let mut block = ObjectController::new(block_collider);
 
     let mut flip = false;
 
@@ -117,6 +121,15 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'gameloop,
+                Event::KeyDown{keycode: Some(Keycode::S), ..} => 
+                {
+                    if block.carried() {
+                        block.put_down(&player1);
+                    }
+                    else if player1.collider.is_touching(&block.collider()) {
+                        block.picked_up(&player1);
+                    }
+                },
                 _ => {},
             }
         }
@@ -127,7 +140,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             .filter_map(Keycode::from_scancode)
             .collect();
 
-        move_player(&mut player1, &keystate, &mut first_left_click, &mut first_right_click);
+        move_player(&mut player1, &keystate, &mut first_left_click, &mut first_right_click, &mut block);
 
         // Is the player touching a portal?
         player1.portal.teleport(&mut player1.collider, &mut player1.physics, &portal_blue_side, &portal_orange_side);
@@ -202,6 +215,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
+        draw_block(&mut wincan, &block);
 
         // draw_collision_boxes(&mut wincan, &player1);
 
@@ -217,6 +231,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         } else {
             flip
         };
+
+        block.update(&player1);
 
         // create the portals
         if event_pump.mouse_state().left() {
@@ -236,11 +252,12 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             networking::NetworkingMode::Receive => {
                 let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34255").unwrap();
-                let player_pos = networking::receive_player_data(&mut socket);
-                let p1sprite = texture_creator.load_texture("assets/in_game/player/characters-sprites_condensed.png").unwrap();
+                let mut buf = networking::get_packet_buffer(&mut socket);
+                let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
+                let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
 
-                let portal_pos = networking::receive_portal_data(&mut socket);
+                let portal_pos = networking::get_portal_position_and_flip(&mut socket, &mut buf);
                 let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
                 
                 /*for p in &player1.portal.portals {
@@ -250,8 +267,9 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
-        render_player(&mut wincan, &mut player1, flip)?;
-        
+
+        render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
+
         for p in &player1.portal.portals {
             wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
         }
@@ -271,8 +289,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     Ok(())
 }
 
-fn render_player(wincan: &mut WindowCanvas, mut player1: &mut Player, mut flip: bool) -> Result<(), String>{
-    wincan.copy_ex(&player1.sprite_sheet, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
+fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, flip: bool) -> Result<(), String>{
+    wincan.copy_ex(&texture, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
 }
 
 fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, player_pos: (f32, f32), flip: bool) -> Result<(), String> {
@@ -280,7 +298,7 @@ fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, pla
     wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 
-fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_click: &mut bool, first_right_click: &mut bool) {
+fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_click: &mut bool, first_right_click: &mut bool, block: &mut ObjectController) {
     if keystate.contains(&Keycode::A) {
         player.physics.accelerate_left();
     }
@@ -301,6 +319,11 @@ fn draw_collision_boxes(wincan: &mut WindowCanvas, player: &Player) {
     wincan.draw_rect(Rect::new(player.collider.x() as i32, player.collider.y() as i32, player.collider.width() as u32, player.collider.height() as u32)).ok();
     wincan.draw_rect(Rect::new(player.portal.portal_colliders[0].x() as i32, player.portal.portal_colliders[0].y() as i32, player.portal.portal_colliders[0].width() as u32, player.portal.portal_colliders[0].height() as u32)).ok();
     wincan.draw_rect(Rect::new(player.portal.portal_colliders[1].x() as i32, player.portal.portal_colliders[1].y() as i32, player.portal.portal_colliders[1].width() as u32, player.portal.portal_colliders[1].height() as u32)).ok();
+}
+
+fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController) {
+    wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
+    wincan.fill_rect(Rect::new(block.x() as i32, block.y() as i32, TILE_SIZE/2, TILE_SIZE/2)).ok();
 }
 
 fn draw_stone_floor(wincan: &mut WindowCanvas, stone_sprite: &Texture) {

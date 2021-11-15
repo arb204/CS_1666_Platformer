@@ -14,7 +14,7 @@ pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
         .unwrap()
         .split(os_specific_linebreak)
         .collect::<Vec<&str>>() {
-        let mut result = a.split("-").collect::<Vec<&str>>();
+        let result = a.split("-").collect::<Vec<&str>>();
         let mut newresult: Vec<String> = vec!();
         for r in result {
             newresult.push(r.to_string());

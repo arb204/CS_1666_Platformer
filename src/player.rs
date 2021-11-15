@@ -5,8 +5,7 @@ use crate::physics_controller::PhysicsController;
 use crate::portal_controller::PortalController;
 use crate::rect_collider::RectCollider;
 
-pub struct Player<'a> {
-    pub sprite_sheet: Texture<'a>,
+pub struct Player {
     pub physics: PhysicsController,
     pub collider: RectCollider,
     pub anim: AnimController,
@@ -14,12 +13,11 @@ pub struct Player<'a> {
     dead: bool
 }
 
-impl Player<'_> {
-    pub fn new(_sheet: Texture, _physics: PhysicsController, _collider: RectCollider, _anim: AnimController, _portal: PortalController)
+impl Player {
+    pub fn new(_physics: PhysicsController, _collider: RectCollider, _anim: AnimController, _portal: PortalController)
                -> Player
     {
         Player {
-            sprite_sheet: _sheet,
             physics: _physics,
             collider: _collider,
             anim: _anim,
