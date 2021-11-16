@@ -75,5 +75,6 @@ impl Player {
     pub fn respawn(&mut self) {
         self.dead = false;
         self.physics.respawn();
+        self.physics.set_speed(0.0);
     }
 }

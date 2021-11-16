@@ -91,7 +91,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     //level data
     let mut current_level = 0; // what level are we on?
-    let final_level = 2; // what level is the last one?
+    let final_level = 3; // what level is the last one?
 
 
     let mut level = levels::parse_level("level0.txt");
@@ -121,7 +121,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'gameloop,
-                Event::KeyDown{keycode: Some(Keycode::S), ..} => 
+                Event::KeyDown{keycode: Some(Keycode::S), ..} =>
                 {
                     if block.carried() {
                         block.put_down(&player1);
@@ -211,7 +211,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         if player1.is_dead() {
             player1.respawn();
         }
-        
+
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
@@ -259,7 +259,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
                 let portal_pos = networking::get_portal_position_and_flip(&mut socket, &mut buf);
                 let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
-                
+
                 /*for p in &player1.portal.portals {
                     wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
                 }*/
