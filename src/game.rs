@@ -50,6 +50,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let nonportal_surface = texture_creator.load_texture("assets/in_game/level/brick/nonportal/stone_brick_64x64.png").unwrap();
     let portal_surface = texture_creator.load_texture("assets/in_game/level/brick/portal/portal_brick_64x64.png").unwrap();
     let portal_glass = texture_creator.load_texture("assets/in_game/level/brick/portal_glass.png").unwrap();
+    let block_texture = texture_creator.load_texture("assets/single_assets/block.png").unwrap();
 
     // declare colliders here
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
@@ -216,7 +217,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
 
-        draw_block(&mut wincan, &block);
+        draw_block(&mut wincan, &block, &block_texture);
 
         // draw_collision_boxes(&mut wincan, &player1);
 
@@ -326,9 +327,9 @@ fn draw_collision_boxes(wincan: &mut WindowCanvas, player: &Player) {
     wincan.draw_rect(Rect::new(player.portal.portal_colliders[1].x() as i32, player.portal.portal_colliders[1].y() as i32, player.portal.portal_colliders[1].width() as u32, player.portal.portal_colliders[1].height() as u32)).ok();
 }
 
-fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController) {
+fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController, sprite: &Texture) {
     wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
-    wincan.fill_rect(Rect::new(block.x() as i32, block.y() as i32, TILE_SIZE/2, TILE_SIZE/2)).ok();
+    wincan.copy(sprite, None, Rect::new(block.x() as i32, block.y() as i32, TILE_SIZE/2, TILE_SIZE/2)).ok();
 }
 
 fn draw_stone_floor(wincan: &mut WindowCanvas, stone_sprite: &Texture) {
