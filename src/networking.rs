@@ -84,7 +84,7 @@ pub(crate) fn get_portal_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8
     (x1,y1,x2,y2)
 }
 
-pub(crate) fn send_data(player: &mut Player, socket: &UdpSocket, _flip: bool) {
+pub(crate) fn send_data(player: &mut Player, socket: &UdpSocket, _flip: bool) -> std::io::Result<usize> {
     let player_xpos = player.physics.x().to_le_bytes(); 
     let player_ypos = player.physics.y().to_le_bytes();
 
@@ -93,6 +93,6 @@ pub(crate) fn send_data(player: &mut Player, socket: &UdpSocket, _flip: bool) {
     let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
     let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
     let buf = [player_xpos, player_ypos, portal_1_x, portal_1_y, portal_2_x, portal_2_y].concat();
-    socket.send(&buf);
-
+    println!("{:?}", &buf);
+    socket.send(&buf)
 }

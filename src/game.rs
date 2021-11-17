@@ -248,9 +248,11 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             networking::NetworkingMode::Send => {
                 let socket = get_sending_socket();
                 if let Err(e) = socket.connect(networking::REC_ADDR) {
-                    println!("Failed to connect to {:?}", networking::REC_ADDR);
+                    println!("Failed to connect to {:?}\nGetting error: {}", networking::REC_ADDR, e);
                 }
-                networking::send_data(&mut player1, &socket, flip);
+                if let Err(e) = networking::send_data(&mut player1, &socket, flip) {
+                    println!("Failed to send data: {}", e);
+                }
             }
             networking::NetworkingMode::Receive => {
                 let mut socket = get_receiving_socket();
