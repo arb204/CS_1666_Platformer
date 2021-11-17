@@ -29,7 +29,7 @@ pub(crate) fn get_packet_buffer(socket: &mut UdpSocket) -> [u8; 24] {
 
 
 // refactor to make safe -- return result
-pub(crate) fn get_player_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8; 24]) -> (f32, f32) {
+pub(crate) fn get_player_position_and_flip(buf: &mut [u8; 24]) -> (f32, f32) {
     let mut xpos: [u8; 4] = [0; 4];
     for i in 0..4 {
         xpos[i] = buf[i];
@@ -48,7 +48,7 @@ pub(crate) fn get_player_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8
 }
 
 // refactor to make safe -- return result
-pub(crate) fn get_portal_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8; 24]) -> (f32, f32, f32, f32) {
+pub(crate) fn get_portal_position_and_flip(buf: &mut [u8; 24]) -> (f32, f32, f32, f32) {
     let mut xpos_1: [u8; 4] = [0; 4];
     for i in 8..12 {
         xpos_1[i-8] = buf[i];

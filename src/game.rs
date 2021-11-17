@@ -2,6 +2,8 @@ use std::collections::HashSet;
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
+use std::sync::mpsc::{self, TryRecvError};
+use std::io::ErrorKind;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -116,6 +118,23 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             player1.add_collider(new_collider, "portalglass");
         }
     }
+
+    let (tx, rx) = mpsc::channel();
+    match network_mode {
+        networking::NetworkingMode::Receive => {
+            let network_thread = thread::spawn(move || {
+                let mut socket = UdpSocket::bind("127.0.0.1:34256").expect("couldn't bind to address");
+                socket.connect("127.0.0.1:34255").unwrap();
+
+                loop {
+                    let buf = networking::get_packet_buffer(&mut socket);
+                    tx.send(buf).unwrap();
+                }
+            });
+        }
+        networking::NetworkingMode::Send => {}
+    }
+    
 
     'gameloop: loop {
         for event in event_pump.poll_iter() {
@@ -246,18 +265,26 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         match network_mode {
             networking::NetworkingMode::Send => {
                 let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
-                socket.connect("127.0.0.1:34254").unwrap();
+                socket.connect("127.0.0.1:34256").unwrap();
                 networking::send_data(&mut player1, &socket, flip);
             }
             networking::NetworkingMode::Receive => {
-                let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
-                socket.connect("127.0.0.1:34255").unwrap();
-                let mut buf = networking::get_packet_buffer(&mut socket);
-                let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
+                let mut buf = rx.try_recv();
+                let mut buf = match buf {
+                    Ok(buf) => buf,
+                    Err(error) => match error {
+                        TryRecvError::Empty => [0; 24],
+                        TryRecvError::Disconnected => panic!("Thread not connected")
+
+                    }
+                };
+            
+
+                let player_pos = networking::get_player_position_and_flip(&mut buf);
                 let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
 
-                let portal_pos = networking::get_portal_position_and_flip(&mut socket, &mut buf);
+                let portal_pos = networking::get_portal_position_and_flip(&mut buf);
                 let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
 
                 /*for p in &player1.portal.portals {
