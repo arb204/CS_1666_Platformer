@@ -2,6 +2,9 @@ use std::borrow::Borrow;
 use std::net::UdpSocket;
 use crate::player::Player;
 
+// try getting from nslookup
+pub const SEND_ADDR: &str = "";
+pub const REC_ADDR: &str = "";
 
 #[derive(Clone, Copy)]
 pub(crate) enum NetworkingMode {
@@ -10,11 +13,11 @@ pub(crate) enum NetworkingMode {
 }
 
 pub(crate) fn get_sending_socket() -> UdpSocket {
-    get_socket("127.0.0.1:34255")
+    get_socket(SEND_ADDR)
 }
 
 pub(crate) fn get_receiving_socket() -> UdpSocket {
-    get_socket("127.0.0.1:34254")
+    get_socket(REC_ADDR)
 }
 
 fn get_socket(address: &str) -> UdpSocket {

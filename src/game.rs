@@ -15,6 +15,7 @@ use crate::{levels, networking};
 use crate::animation_controller::Anim;
 use crate::animation_controller::AnimController;
 use crate::animation_controller::Condition;
+use crate::networking::{get_receiving_socket, get_sending_socket};
 use crate::physics_controller::PhysicsController;
 use crate::player::Player;
 use crate::portal_controller::{Portal, PortalController};
@@ -245,13 +246,13 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         // now that updates are processed, we do networking and then render
         match network_mode {
             networking::NetworkingMode::Send => {
-                let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
-                socket.connect("127.0.0.1:34254").unwrap();
+                let socket = get_sending_socket();
+                socket.connect(networking::REC_ADDR).unwrap();
                 networking::send_data(&mut player1, &socket, flip);
             }
             networking::NetworkingMode::Receive => {
-                let mut socket = UdpSocket::bind("127.0.0.1:34254").expect("couldn't bind to address");
-                socket.connect("127.0.0.1:34255").unwrap();
+                let mut socket = get_receiving_socket();
+                socket.connect(networking::SEND_ADDR).unwrap();
                 let mut buf = networking::get_packet_buffer(&mut socket);
                 let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
                 let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
