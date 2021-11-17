@@ -36,7 +36,7 @@ fn perform_start_logic(wincan: WindowCanvas, event_pump: EventPump, mouse: Mouse
 			mode = networking::NetworkingMode::Receive;
 			menu::show_menu(wincan, event_pump, mouse, mode);
 		} else if &args[1] == "credits" {
-			credits::show_credits(wincan);
+			credits::show_credits(wincan, event_pump);
 		}
 	} else {
 		menu::show_menu(wincan, event_pump, mouse, mode);
