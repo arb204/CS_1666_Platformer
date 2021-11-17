@@ -1,11 +1,13 @@
 use std::thread;
 use std::time::Duration;
 
+use sdl2::event::Event;
 use sdl2::image::LoadTexture;
+use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::render::WindowCanvas;
 
-pub(crate) fn show_credits(mut wincan: WindowCanvas) {
+pub(crate) fn show_credits(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump) {
     let texture_creator = wincan.texture_creator();
 
     let andrew = texture_creator.load_texture("assets/out_of_game/credits/andrew_credits.png").unwrap();
@@ -24,45 +26,117 @@ pub(crate) fn show_credits(mut wincan: WindowCanvas) {
     wincan.copy(&andrew, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
-
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
+    
     wincan.copy(&kira, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 
     wincan.copy(&josh, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 
     wincan.copy(&alvyn, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 
     wincan.copy(&greg, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 
     wincan.copy(&jake, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 
     wincan.copy(&bryce, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 
     wincan.copy(&austin, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 
     wincan.copy(&evan, None, None).ok();
     wincan.present();
 
-    thread::sleep(Duration::from_millis(1500));
+    for n in 1..100 {
+        thread::sleep(Duration::from_millis(15));
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => return,
+            _ => {},
+            }
+        }
+    }
 }

@@ -17,6 +17,7 @@ use crate::{levels, networking};
 use crate::animation_controller::Anim;
 use crate::animation_controller::AnimController;
 use crate::animation_controller::Condition;
+use crate::networking::{get_receiving_socket, get_sending_socket};
 use crate::physics_controller::PhysicsController;
 use crate::player::Player;
 use crate::portal_controller::{Portal, PortalController};
@@ -264,6 +265,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         // now that updates are processed, we do networking and then render
         match network_mode {
             networking::NetworkingMode::Send => {
+
                 let socket = UdpSocket::bind("127.0.0.1:34255").expect("couldn't bind to address");
                 socket.connect("127.0.0.1:34256").unwrap();
                 networking::send_data(&mut player1, &socket, flip);
@@ -281,6 +283,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             
 
                 let player_pos = networking::get_player_position_and_flip(&mut buf);
+
                 let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
 
