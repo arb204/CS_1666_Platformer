@@ -247,12 +247,16 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         match network_mode {
             networking::NetworkingMode::Send => {
                 let socket = get_sending_socket();
-                socket.connect(networking::REC_ADDR).unwrap();
+                if let Err(e) = socket.connect(networking::REC_ADDR) {
+                    println!("Failed to connect to {:?}", networking::REC_ADDR);
+                }
                 networking::send_data(&mut player1, &socket, flip);
             }
             networking::NetworkingMode::Receive => {
                 let mut socket = get_receiving_socket();
-                socket.connect(networking::SEND_ADDR).unwrap();
+                if let Err(e) = socket.connect(networking::SEND_ADDR) {
+                    println!("Failed to connect to {:?}", networking::SEND_ADDR);
+                }
                 let mut buf = networking::get_packet_buffer(&mut socket);
                 let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
                 let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();

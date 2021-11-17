@@ -21,7 +21,9 @@ pub(crate) fn get_receiving_socket() -> UdpSocket {
 }
 
 fn get_socket(address: &str) -> UdpSocket {
-    UdpSocket::bind(address).expect("couldn't bind to address")
+    let socket = UdpSocket::bind(address).expect("couldn't bind to address");
+    println!("{:?}", socket);
+    socket
 }
 
 pub(crate) fn get_packet_buffer(socket: &mut UdpSocket) -> [u8; 24] {
