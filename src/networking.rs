@@ -3,8 +3,8 @@ use std::net::UdpSocket;
 use crate::player::Player;
 
 // try getting from nslookup
-pub const SEND_ADDR: &str = "";
-pub const REC_ADDR: &str = "";
+pub const SEND_ADDR: &str = "127.0.0.1:34255";
+pub const REC_ADDR: &str = "127.0.0.1:34254";
 
 #[derive(Clone, Copy)]
 pub(crate) enum NetworkingMode {
