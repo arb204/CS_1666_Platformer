@@ -43,14 +43,14 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let cursor = texture_creator.load_texture("assets/in_game/cursor/cursor.png").unwrap();
     let portalsprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
     let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
-    let stone_sprite = texture_creator.load_texture("assets/single_assets/purple_floor_tile.png").unwrap();
+    let stone_sprite = texture_creator.load_texture("assets/in_game/level/purple_floor/purple_floor_tile.png").unwrap();
     let door_sheet = texture_creator.load_texture("assets/in_game/level/door/doors_sprite_sheet.png").unwrap();
     let level_cleared_msg_sprite = texture_creator.load_texture("assets/in_game/message/level_cleared/level_cleared_msg.png").unwrap();
     let castle_bg = texture_creator.load_texture("assets/in_game/level/background/castle/castle-bg.png").unwrap();
     let nonportal_surface = texture_creator.load_texture("assets/in_game/level/brick/nonportal/stone_brick_64x64.png").unwrap();
     let portal_surface = texture_creator.load_texture("assets/in_game/level/brick/portal/portal_brick_64x64.png").unwrap();
     let portal_glass = texture_creator.load_texture("assets/in_game/level/brick/portal_glass.png").unwrap();
-    let block_texture = texture_creator.load_texture("assets/single_assets/block.png").unwrap();
+    let block_texture = texture_creator.load_texture("assets/in_game/block/block.png").unwrap();
 
     // declare colliders here
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
