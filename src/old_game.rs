@@ -12,15 +12,15 @@ use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 
 use crate::{levels, networking};
-use crate::animation_controller::Anim;
-use crate::animation_controller::AnimController;
-use crate::animation_controller::Condition;
+use crate::game::animation_controller::Anim;
+use crate::game::animation_controller::AnimController;
+use crate::game::animation_controller::Condition;
 use crate::networking::{get_receiving_socket, get_sending_socket};
-use crate::physics_controller::PhysicsController;
-use crate::player::Player;
-use crate::portal_controller::{Portal, PortalController};
-use crate::rect_collider::RectCollider;
-use crate::object_controller::ObjectController;
+use crate::game::physics_controller::PhysicsController;
+use crate::game::player::Player;
+use crate::game::portal_controller::{Portal, PortalController};
+use crate::game::rect_collider::RectCollider;
+use crate::game::object_controller::ObjectController;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -38,8 +38,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let frame_rate = 60;
 
     // declare textures here
-    let bluewand = texture_creator.load_texture("assets/in_game/player/wand/blue/wand_sprite_blue.png").unwrap();
-    let orangewand = texture_creator.load_texture("assets/in_game/player/wand/orange/wand_sprite_orange.png").unwrap();
+    let bluewand = texture_creator.load_texture("assets/in_game/player/wand/blue/blue_wand.png").unwrap();
+    let orangewand = texture_creator.load_texture("assets/in_game/player/wand/orange/orange_wand.png").unwrap();
     let cursor = texture_creator.load_texture("assets/in_game/cursor/cursor.png").unwrap();
     let portalsprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
     let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
@@ -80,7 +80,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     let mut block = ObjectController::new(block_collider);
 
-    let mut flip = false;
+    let mut looking_left = false;
 
     let mut level_cleared = false;
 
@@ -224,14 +224,14 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         player1.update();
 
         // do we need to flip the player?
-        flip = if level_cleared {
-            flip
-        } else if player1.physics.speed() > 0.0 && flip  {
+        looking_left = if level_cleared {
+            looking_left
+        } else if player1.physics.speed() > 0.0 && looking_left {
             false
-        } else if player1.physics.speed() < 0.0 && !flip {
+        } else if player1.physics.speed() < 0.0 && !looking_left {
             true
         } else {
-            flip
+            looking_left
         };
 
         block.update(&player1);
@@ -251,7 +251,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 if let Err(e) = socket.connect(networking::REC_ADDR) {
                     println!("Failed to connect to {:?}", networking::REC_ADDR);
                 }
-                networking::send_data(&mut player1, &socket, flip);
+                networking::send_data(&mut player1, &socket, looking_left);
             }
             networking::NetworkingMode::Receive => {
                 let mut socket = get_receiving_socket();
@@ -261,7 +261,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 let mut buf = networking::get_packet_buffer(&mut socket);
                 let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
                 let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
-                render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
+                render_mirrored_player(&mut wincan, p1sprite, player_pos, looking_left)?;
 
                 let portal_pos = networking::get_portal_position_and_flip(&mut socket, &mut buf);
                 let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
@@ -274,7 +274,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             }
         }
 
-        render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
+        render_player(&p1sprite, &mut wincan, &mut player1, looking_left)?;
 
         for p in &player1.portal.portals {
             wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;

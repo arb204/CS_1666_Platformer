@@ -1,4 +1,4 @@
-use crate::physics_controller::PhysicsController;
+use crate::game::physics_controller::PhysicsController;
 
 #[derive(Copy, Clone)]
 pub struct RectCollider {

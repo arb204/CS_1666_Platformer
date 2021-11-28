@@ -1,6 +1,6 @@
 use std::time::{Duration, SystemTime};
 
-use crate::rect_collider::RectCollider;
+use crate::game::rect_collider::RectCollider;
 
 //#[derive(Copy, Clone)]
 pub struct PhysicsController {

@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 
 use sdl2::rect::Rect;
-use crate::physics_controller::PhysicsController;
+use crate::game::physics_controller::PhysicsController;
 
 pub struct AnimController {
     columns: i32,

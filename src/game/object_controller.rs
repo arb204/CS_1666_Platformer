@@ -1,6 +1,6 @@
 //ObjectController: controls physics and collision for carryable objects (UNFINISHED)
-use crate::rect_collider::RectCollider;
-use crate::player::Player;
+use crate::game::rect_collider::RectCollider;
+use crate::game::player::Player;
 pub struct ObjectController {
     collider: RectCollider,
     carried: bool,

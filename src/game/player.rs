@@ -1,9 +1,9 @@
 use sdl2::render::Texture;
 
-use crate::animation_controller::AnimController;
-use crate::physics_controller::PhysicsController;
-use crate::portal_controller::PortalController;
-use crate::rect_collider::RectCollider;
+use crate::game::animation_controller::AnimController;
+use crate::game::physics_controller::PhysicsController;
+use crate::game::portal_controller::PortalController;
+use crate::game::rect_collider::RectCollider;
 
 pub struct Player {
     pub physics: PhysicsController,
