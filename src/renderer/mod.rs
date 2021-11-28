@@ -15,14 +15,13 @@ impl Renderer {
         Ok(Renderer { wincan, texture_creator })
     }
 
-    pub fn display(&mut self, game: &Game) -> Result<(), Box<dyn Error>> {
-        Ok(())
+    pub fn display(&mut self, game: &Game) {
+        self.wincan.present();
     }
 
     pub fn display_start_screen(&mut self) -> Result<(), String> {
         let start_screen = self.texture_creator.load_texture("assets/out_of_game/menu/start_screen.png")?;
         self.wincan.copy(&start_screen, None, None)?;
-        self.wincan.present();
         Ok(())
     }
 }

@@ -1,5 +1,7 @@
 use std::fs;
 
+pub const LAST_LEVEL: u8 = 4;
+
 // load_level: used to load a level (UNUSED FOR NOW)
 pub(crate) fn parse_level(filename: &str) -> Vec<Vec<String>> {
     //this function returns a list of the different objects in our scene

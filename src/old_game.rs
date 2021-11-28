@@ -96,7 +96,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let final_level = 3; // what level is the last one?
 
 
-    let mut level = levels::parse_level("level0.txt");
+    let mut level = levels::parse_level("level1.txt");
 
     // we read in the level from a file and add the necessary colliders and stuff
     for obj in level.iter() {
