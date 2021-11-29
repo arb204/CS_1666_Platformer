@@ -1,8 +1,8 @@
-nonportalblock-0-0-1-12
-nonportalblock-0-0-20-1
-nonportalblock-960-656-6-1
+portalblock-0-0-1-12
 nonportalblock-1216-0-1-12
-portalblock-128-1-3-1
-portalblock-128-640-3-1
-portalblock-64-128-1-2
-start-100-500
+nonportalblock-0-0-20-1
+portalblock-640-320-9-1
+nonportalblock-64-192-4-2
+nonportalblock-64-640-3-2
+nonportalblock-960-656-4-2
+start-75-100

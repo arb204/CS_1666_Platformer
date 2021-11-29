@@ -7,19 +7,14 @@ use sdl2::{EventPump, Sdl};
 use sdl2::event::Event;
 use sdl2::mouse::MouseUtil;
 use sdl2::render::WindowCanvas;
+
 use crate::renderer::Renderer;
 
 mod credits;
 mod old_game;
-mod player;
-mod physics_controller;
-mod rect_collider;
 mod menu;
-mod animation_controller;
-mod portal_controller;
 mod networking;
 mod hint_system;
-mod object_controller;
 mod portal_traversible;
 mod levels;
 mod renderer;
@@ -74,10 +69,7 @@ fn main() {
 			}
 		}
 
-		if let Err(e) = renderer.display(&game) {
-			eprintln!("Renderer error: {}", e);
-			process::exit(1);
-		}
+		renderer.display(&game);
 	}
 }
 

@@ -1,7 +1,7 @@
 use std::time::{Duration, SystemTime};
 
-use crate::physics_controller::PhysicsController;
-use crate::rect_collider::RectCollider;
+use crate::game::physics_controller::PhysicsController;
+use crate::game::rect_collider::RectCollider;
 
 pub struct PortalController {
     wand_x: i32,

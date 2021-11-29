@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::net::UdpSocket;
-use crate::player::Player;
+use crate::game::player::Player;
 
 // try getting from nslookup
 pub const SEND_ADDR: &str = "127.0.0.1:34255";
