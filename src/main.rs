@@ -15,7 +15,7 @@ mod old_game;
 mod menu;
 mod networking;
 mod hint_system;
-mod portal_traversible;
+mod portal_traversable;
 mod levels;
 mod renderer;
 mod game;
@@ -26,6 +26,8 @@ pub struct Config {
 
 impl Config {
 	fn new() -> Result<Config, Box<dyn Error>> {
+		todo!(); // make mode check singleplayer vs multiplayer
+		// although, I'd say we want that to be a main menu option
 		let args: Vec<String> = env::args().collect();
 		let mut mode = networking::NetworkingMode::Send;
 		if args.len() == 2 && &args[1] == "mirror" {
@@ -51,6 +53,8 @@ fn main() {
 		eprintln!("Error creating renderer: {}", err);
 		process::exit(1);
 	});
+	renderer.init();
+
 	let mut game = game::Game::new(config, event_pump, mouse);
 
 	if let Err(e) = renderer.display_start_screen() {
