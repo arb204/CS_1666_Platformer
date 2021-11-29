@@ -15,7 +15,7 @@ mod old_game;
 mod menu;
 mod networking;
 mod hint_system;
-mod portal_traversible;
+mod portal_traversable;
 mod levels;
 mod renderer;
 mod game;
