@@ -140,8 +140,8 @@ impl Condition {
         // split the string into three sections: the keyword of the field we want to check,
         // the comparator we want to use, and the value we want to compare it to
         if self.condition == "true" { return true; }
+        if self.condition == "grounded" { return self.physics.is_grounded(); }
         let split_str = self.condition.split(" ").collect::<Vec<&str>>();
-        //println!("split condition: {} {} {}", split_str[0], split_str[1], split_str[2]);
         let field = split_str[0];
         let comparator = split_str[1];
         let value: f32 = split_str[2].parse().unwrap();
@@ -169,7 +169,7 @@ impl Condition {
             if comparator == "=" { return self.physics.speed() == value; }
             if comparator == "!=" { return self.physics.speed() != value; }
         }
-        if field == "fallspeed" {
+        if field == "fallspeed" && !self.physics.is_grounded() {
             if comparator == ">" { return self.physics.fall_speed() > value; }
             if comparator == "<" { return self.physics.fall_speed() < value; }
             if comparator == "<=" { return self.physics.fall_speed() <= value; }

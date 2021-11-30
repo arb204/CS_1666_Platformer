@@ -14,6 +14,7 @@ pub struct PhysicsController {
     jump_speed: f32,
     jumps_used: i8,
     last_jump_time: SystemTime,
+    last_ground_time: SystemTime,
     max_jumps: i8,
     stop_speed: f32,
     fall_speed: f32,
@@ -39,6 +40,7 @@ impl PhysicsController {
             jump_speed: _jumpspeed,
             jumps_used: _maxjumps,
             last_jump_time: SystemTime::now(),
+            last_ground_time: SystemTime::now(),
             max_jumps: _maxjumps,
             stop_speed: _stopspeed,
             fall_speed: 0.0,
@@ -57,6 +59,10 @@ impl PhysicsController {
     pub fn y(&self) -> f32 { self.y }
     pub fn speed(&self) -> f32 { self.speed }
     pub fn fall_speed(&self) -> f32 { self.fall_speed }
+    pub fn is_grounded(&self) -> bool { self.is_grounded }
+    pub fn total_speed(&self) -> f32 {
+        self.speed.powf(2.0) + self.fall_speed.powf(2.0).powf(0.5)
+    }
     pub fn colliders(&self) -> Vec<RectCollider> {
         let mut return_vec: Vec<RectCollider> = vec!();
         for c in &self.colliders {
@@ -171,8 +177,12 @@ impl PhysicsController {
                 self.fall_speed += self.gravity;
             }
 
-            //reset jumps if we're on the ground
-            if self.is_grounded && self.fall_speed > 0.0 {
+            if !self.is_grounded {
+                self.last_ground_time = SystemTime::now();
+            }
+
+            //reset jumps if we're on the ground and we've been on the ground for a little while
+            if self.is_grounded && self.fall_speed > 0.0 && self.last_ground_time+Duration::from_millis(100) < SystemTime::now() {
                 self.reset_jumps();
                 self.fall_speed = 0.0;
             }
@@ -181,6 +191,8 @@ impl PhysicsController {
 
     //jump: if we have jumps left, give ourselves a boost upwards. this is so we can support multiple jumps if we need
     pub fn jump(&mut self) {
+        // the first jump must take place on the ground
+        if self.jumps_used == 0 && !self.is_grounded { return; }
         // the time comparison here is to prevent jumps from occurring on successive frames, which would be frustrating to players
         if self.last_jump_time+Duration::from_millis(500) < SystemTime::now() && self.jumps_used < self.max_jumps {
             self.jumps_used += 1;
@@ -204,6 +216,7 @@ impl Clone for PhysicsController {
             jump_speed: self.jump_speed,
             jumps_used: self.jumps_used,
             last_jump_time: self.last_jump_time,
+            last_ground_time: self.last_ground_time,
             max_jumps: self.max_jumps,
             stop_speed: self.stop_speed,
             fall_speed: self.fall_speed,

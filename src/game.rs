@@ -59,7 +59,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
-    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 70.0, vec!());
+    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 40.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
     let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
@@ -144,8 +144,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         move_player(&mut player1, &keystate, &mut first_left_click, &mut first_right_click, &mut block);
 
-        // Is the player touching a portal?
-        player1.portal.teleport(&mut player1.collider, &mut player1.physics, &portal_blue_side, &portal_orange_side);
+        // Teleport the player
+        player1.portal.teleport(&mut player1.collider, &mut player1.physics);
 
         wincan.set_draw_color(BACKGROUND);
         wincan.clear();
@@ -238,10 +238,10 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
         // create the portals
         if event_pump.mouse_state().left() {
-            player1.portal.open_portal(0, &mut portal_blue_side, &mut portal_orange_side);
+            player1.portal.open_portal(0);
         }
         if event_pump.mouse_state().right() {
-            player1.portal.open_portal(1, &mut portal_blue_side, &mut portal_orange_side);
+            player1.portal.open_portal(1);
         }
 
         // now that updates are processed, we do networking and then render
