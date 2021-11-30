@@ -58,7 +58,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
      */
     // **************************************************************************
     /*
-    Game logic setup begins here.
+    Game state setup begins here.
      */
     // Colliders
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
@@ -126,8 +126,18 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             player1.add_collider(new_collider, "portalglass");
         }
     }
+    /*
+    Game state setup complete.
+     */
+    // ****************************************************************
 
+    /*
+    Begin game update loop.
+     */
     'gameloop: loop {
+        /*
+        Begin game state update.
+         */
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'gameloop,
@@ -155,11 +165,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         // Teleport the player
         player1.portal.teleport(&mut player1.collider, &mut player1.physics);
 
-        wincan.set_draw_color(BACKGROUND);
-        wincan.clear();
-        wincan.copy(&castle_bg, None, None).ok();
-
-        draw_stone_floor(&mut wincan, &stone_sprite);
 
         // check to see if player has reached the end of the level
         if level_cleared == false && player1.collider.is_touching(&door_collider) {
@@ -201,18 +206,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             level_cleared = false;
         }
 
-        // draw the surfaces
-        for obj in level.iter() {
-            if obj[0] == "portalblock" {
-                draw_surface(&mut wincan, &portal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
-            }
-            if obj[0] == "nonportalblock" {
-                draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
-            }
-            if obj[0] == "portalglass" {
-                draw_surface(&mut wincan, &portal_glass, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
-            }
-        }
 
         if !player1.is_dead() && (player1.physics.x() < 0.0 || player1.physics.x() > 1280.0 || player1.physics.y() < 0.0 || player1.physics.y() > 720.0) {
             player1.kill();
@@ -222,12 +215,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             player1.respawn();
         }
 
-
-        draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
-
-        draw_block(&mut wincan, &block, &block_texture);
-
-        // draw_collision_boxes(&mut wincan, &player1);
 
         player1.update();
 
@@ -281,7 +268,34 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
+        /*
+        End game state update.
+         */
 
+        // **********************************************************************
+        /*
+        Begin rendering current frame.
+         */
+        wincan.set_draw_color(BACKGROUND);
+        wincan.clear();
+        wincan.copy(&castle_bg, None, None).ok();
+
+        draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
+        // draw_collision_boxes(&mut wincan, &player1);
+        // draw the surfaces
+        for obj in level.iter() {
+            if obj[0] == "portalblock" {
+                draw_surface(&mut wincan, &portal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+            }
+            if obj[0] == "nonportalblock" {
+                draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+            }
+            if obj[0] == "portalglass" {
+                draw_surface(&mut wincan, &portal_glass, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+            }
+        }
+
+        draw_block(&mut wincan, &block, &block_texture);
         render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
 
         for p in &player1.portal.portals {
@@ -295,6 +309,9 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
         //draw to the screen
         wincan.present();
+        /*
+        End rendering current frame.
+         */
 
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/ FRAME_RATE));
