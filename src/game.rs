@@ -84,9 +84,6 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     let mut level_cleared = false;
 
-    let mut first_left_click = true;
-    let mut first_right_click = true;
-
     // used to test the orientation of the portals for teleporting
     let mut portal_blue_side = -1;
     let mut portal_orange_side = -1;
@@ -142,7 +139,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             .filter_map(Keycode::from_scancode)
             .collect();
 
-        move_player(&mut player1, &keystate, &mut first_left_click, &mut first_right_click, &mut block);
+        move_player(&mut player1, &keystate, &mut block);
 
         // Teleport the player
         player1.portal.teleport(&mut player1.collider, &mut player1.physics);
@@ -304,7 +301,7 @@ fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, pla
     wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 
-fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, first_left_click: &mut bool, first_right_click: &mut bool, block: &mut ObjectController) {
+fn move_player(player: &mut Player, keystate: &HashSet<Keycode>, block: &mut ObjectController) {
     if keystate.contains(&Keycode::A) {
         player.physics.accelerate_left();
     }

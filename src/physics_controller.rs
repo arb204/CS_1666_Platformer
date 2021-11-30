@@ -53,8 +53,8 @@ impl PhysicsController {
     }
 
     //getters
-    pub fn start_x(&self) -> f32 { self.x }
-    pub fn start_y(&self) -> f32 { self.y }
+    //pub fn start_x(&self) -> f32 { self.start_x }
+    //pub fn start_y(&self) -> f32 { self.start_y }
     pub fn x(&self) -> f32 { self.x }
     pub fn y(&self) -> f32 { self.y }
     pub fn speed(&self) -> f32 { self.speed }
