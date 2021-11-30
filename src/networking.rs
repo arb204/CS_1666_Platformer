@@ -22,7 +22,10 @@ pub(crate) fn get_receiving_socket() -> UdpSocket {
 
 fn get_socket(address: &str) -> UdpSocket {
     let socket = UdpSocket::bind(address).expect("couldn't bind to address");
-    println!("{:?}", socket);
+    let debug = false;
+    if debug {
+        println!("{:?}", socket);
+    }
     socket
 }
 
