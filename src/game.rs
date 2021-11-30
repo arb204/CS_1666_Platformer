@@ -28,15 +28,17 @@ const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
 const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
+const FRAME_RATE: u64 = 60;
 
-pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
-                        mouse: MouseUtil, network_mode: networking::NetworkingMode)
-    -> Result<(), String> {
+pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
+                  mouse: MouseUtil, network_mode: networking::NetworkingMode)
+                  -> Result<(), String> {
     mouse.show_cursor(false);
+    /*
+    Renderer setup begins here.
+    Currently only includes loading textures.
+     */
     let texture_creator = wincan.texture_creator();
-
-    let frame_rate = 60;
-
     // declare textures here
     let bluewand = texture_creator.load_texture("assets/in_game/player/wand/blue/wand_sprite_blue.png").unwrap();
     let orangewand = texture_creator.load_texture("assets/in_game/player/wand/orange/wand_sprite_orange.png").unwrap();
@@ -51,24 +53,33 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     let portal_surface = texture_creator.load_texture("assets/in_game/level/brick/portal/portal_brick_64x64.png").unwrap();
     let portal_glass = texture_creator.load_texture("assets/in_game/level/brick/portal_glass.png").unwrap();
     let block_texture = texture_creator.load_texture("assets/in_game/block/block.png").unwrap();
-
-    // declare colliders here
+    /*
+    Renderer setup complete.
+     */
+    // **************************************************************************
+    /*
+    Game logic setup begins here.
+     */
+    // Colliders
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
     let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
+    // Controllers and portals
     let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 40.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
     let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
 
-    //this is a list of the animations we'll use for the player
-    //the first parameter is the frames to use
-    //the second parameter is how long each frame should be drawn before progressing
-    //the third is the condition to activate the animation
-    //the last is a reference to its parent animation controller
+    /*
+    Animations
+    the first parameter is the frames to use
+    the second parameter is how long each frame should be drawn before progressing
+    the third is the condition to activate the animation
+    the last is a reference to its parent animation controller
+    */
     let idle = Anim::new(vec![1], vec![10, 10], Condition::new("true".to_string(), 1, p1physcon.clone()));
     let run = Anim::new(vec![1, 2], vec![10, 10], Condition::new("speed != 0".to_string(), 2, p1physcon.clone()));
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
@@ -76,8 +87,8 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
 
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
+    // Entities
     let mut player1 = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
-
     let mut block = ObjectController::new(block_collider);
 
     let mut flip = false;
@@ -286,7 +297,7 @@ pub(crate) fn show_game(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
         wincan.present();
 
         //lock the frame rate
-        thread::sleep(Duration::from_millis(1000/frame_rate));
+        thread::sleep(Duration::from_millis(1000/ FRAME_RATE));
     }
 
     Ok(())

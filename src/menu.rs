@@ -4,7 +4,7 @@ use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseUtil;
 use sdl2::render::WindowCanvas;
 
-use crate::game::show_game;
+use crate::game::run;
 use crate::networking::NetworkingMode;
 
 pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode)
@@ -37,5 +37,5 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
     //     NetworkingMode::Send => print!("SENDING"),
     //     NetworkingMode::Receive => print!("RECEIVING"),
     // }
-    show_game(wincan, event_pump, mouse, network_mode).ok();
+    run(wincan, event_pump, mouse, network_mode).ok();
 }
