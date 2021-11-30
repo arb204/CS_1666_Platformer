@@ -98,8 +98,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let mut player1 = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
     let mut block = ObjectController::new(block_collider);
 
-    let mut flip = false;
-
     let mut level_cleared = false;
 
     // used to test the orientation of the portals for teleporting
@@ -258,14 +256,14 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         platecon.update_plate(block.collider());
 
         // do we need to flip the player?
-        flip = if level_cleared {
-            flip
-        } else if player1.physics.speed() > 0.0 && flip  {
+        player1.is_looking_left = if level_cleared {
+            player1.is_looking_left
+        } else if player1.physics.speed() > 0.0 && player1.is_looking_left {
             false
-        } else if player1.physics.speed() < 0.0 && !flip {
+        } else if player1.physics.speed() < 0.0 && !player1.is_looking_left {
             true
         } else {
-            flip
+            player1.is_looking_left
         };
 
         // create the portals
@@ -283,7 +281,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 if let Err(e) = socket.connect(networking::REC_ADDR) {
                     println!("Failed to connect to {:?}", networking::REC_ADDR);
                 }
-                networking::send_data(&mut player1, &socket, flip);
+                networking::send_data(&mut player1, &socket);
             }
             networking::NetworkingMode::Receive => {
                 let mut socket = get_receiving_socket();
@@ -291,7 +289,12 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     println!("Failed to connect to {:?}", networking::SEND_ADDR);
                 }
                 let mut buf = networking::get_packet_buffer(&mut socket);
-                let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
+                let player_data = networking::get_player_position_and_flip(&mut socket, &mut buf)
+                    .(|err| {
+                        eprintln!("{}", err);
+                    });
+                let player_pos = (player_data.0, player_data.1);
+                let flip = player_data.2;
                 let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
                 render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
 
@@ -317,6 +320,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         wincan.clear();
         wincan.copy(&castle_bg, None, None).ok();
 
+        render_player(&p1sprite, &mut wincan, &mut player1, player1.is_looking_left)?;
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
         // draw_collision_boxes(&mut wincan, &player1);
         // draw the surfaces

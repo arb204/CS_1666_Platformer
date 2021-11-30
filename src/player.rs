@@ -11,7 +11,8 @@ pub struct Player {
     pub collider: RectCollider,
     pub anim: AnimController,
     pub portal: PortalController,
-    dead: bool
+    dead: bool,
+    pub is_looking_left: bool,
 }
 
 impl Player {
@@ -23,7 +24,8 @@ impl Player {
             collider: _collider,
             anim: _anim,
             portal: _portal,
-            dead: false
+            dead: false,
+            is_looking_left: false,
         }
     }
     pub fn is_dead(&self) -> bool { self.dead }
