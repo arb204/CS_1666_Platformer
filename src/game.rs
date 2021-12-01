@@ -256,14 +256,14 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         platecon.update_plate(block.collider());
 
         // do we need to flip the player?
-        player1.is_looking_left = if level_cleared {
-            player1.is_looking_left
-        } else if player1.physics.speed() > 0.0 && player1.is_looking_left {
+        player1.flip_horizontal = if level_cleared {
+            player1.flip_horizontal
+        } else if player1.physics.speed() > 0.0 && player1.flip_horizontal {
             false
-        } else if player1.physics.speed() < 0.0 && !player1.is_looking_left {
+        } else if player1.physics.speed() < 0.0 && !player1.flip_horizontal {
             true
         } else {
-            player1.is_looking_left
+            player1.flip_horizontal
         };
 
         // create the portals
@@ -275,13 +275,15 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         }
 
         // now that updates are processed, we do networking and then render
+        let mut player2_data = None;
+
         match network_mode {
             networking::NetworkingMode::Send => {
                 let socket = get_sending_socket();
                 if let Err(e) = socket.connect(networking::REC_ADDR) {
                     println!("Failed to connect to {:?}", networking::REC_ADDR);
                 }
-                networking::send_data(&mut player1, &socket);
+                networking::pack_and_send_data(&mut player1, &socket);
             }
             networking::NetworkingMode::Receive => {
                 let mut socket = get_receiving_socket();
@@ -289,23 +291,17 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     println!("Failed to connect to {:?}", networking::SEND_ADDR);
                 }
                 let mut buf = networking::get_packet_buffer(&mut socket);
-                let player_data = networking::get_player_position_and_flip(&mut socket, &mut buf)
-                    .(|err| {
-                        eprintln!("{}", err);
-                    });
-                let player_pos = (player_data.0, player_data.1);
-                let flip = player_data.2;
-                let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
-                render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
+                let player_data = networking::unpack_player_data(&mut socket, &mut buf)
+                    .unwrap();
 
-                let portal_pos = networking::get_portal_position_and_flip(&mut socket, &mut buf);
-                let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
+                let portal_pos: (f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
+                player2_data = Some((player_data, portal_pos));
 
-                /*for p in &player1.portal.portals {
-                    wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
-                }*/
-                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[0].color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
-                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
+                // /*for p in &player1.portal.portals {
+                //     wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
+                // }*/
+                // wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[0].color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
+                // wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
         /*
@@ -340,12 +336,45 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         }
 
         draw_block(&mut wincan, &block, &block_texture);
-        render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
-
-        for p in &player1.portal.portals {
-            wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
+        render_player(&p1sprite, &mut wincan, &mut player1)?;
+        match player2_data {
+            Some(_) => {
+                let player_data = player2_data.unwrap().0;
+                let player_pos: (f32, f32) = (player_data.0, player_data.1);
+                let flip: bool = player_data.2;
+                let anim_rect = Rect::new(
+                    player_data.3,
+                    player_data.4,
+                    player_data.5,
+                    player_data.6
+                );
+                render_mirrored_player(&mut wincan, &p1sprite, player_pos, flip, anim_rect)?;
+            }
+            None => {}
         }
 
+        let mut render_portal = |p: &Portal| {
+            wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false).unwrap();
+        };
+        // render portals
+        for p in &player1.portal.portals {
+            render_portal(p);
+        }
+        match player2_data {
+            Some(_) => {
+                let portal_data: (f32, f32, f32, f32) = player2_data.unwrap().1;
+                let portal1 = (portal_data.0, portal_data.1, 0);
+                let portal2 = (portal_data.2, portal_data.3, 1);
+                let mut render_portal = |p: (f32, f32, i32)| {
+                    wincan.copy_ex(&portalsprite, Rect::new(500*p.2+125, 0, 125, 250), Rect::new(p.0 as i32, p.1 as i32, 60, 100), 0.0, None, false, false).unwrap();
+                };
+                render_portal(portal1);
+                render_portal(portal2);
+            }
+            None => {}
+        }
+
+        // wand color
         wincan.copy_ex(if player1.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player1.physics.x() as i32 + player1.portal.wand_x(), player1.physics.y() as i32 + player1.portal.wand_y(), 100, 20), player1.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
 
         //draw a custom cursor
@@ -364,13 +393,14 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     Ok(())
 }
 
-fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, flip: bool) -> Result<(), String>{
-    wincan.copy_ex(&texture, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
+fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player) -> Result<(), String>{
+    let pos_rect = player1.physics.position_rect();
+    let pos_rect = Rect::new(pos_rect.0, pos_rect.1, pos_rect.2, pos_rect.3);
+    wincan.copy_ex(&texture, player1.anim.next_anim(), pos_rect, 0.0, None, player1.flip_horizontal, false)
 }
 
-fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, player_pos: (f32, f32), flip: bool) -> Result<(), String> {
-    let player_rect = Rect::new(0, 2*98, 69, 98);
-    wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
+fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: &Texture, player_pos: (f32, f32), flip: bool, anim_rect: Rect) -> Result<(), String> {
+    wincan.copy_ex(player_sprite, anim_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 
 fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
