@@ -23,6 +23,7 @@ use crate::portal_controller::{Portal, PortalController};
 use crate::rect_collider::RectCollider;
 use crate::object_controller::ObjectController;
 use crate::plate_controller::PlateController;
+use crate::credits;
 
 const TILE_SIZE: u32 = 64;
 const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -342,7 +343,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         //lock the frame rate
         thread::sleep(Duration::from_millis(1000/ FRAME_RATE));
     }
-
+    credits::show_credits(wincan, event_pump);
     Ok(())
 }
 
