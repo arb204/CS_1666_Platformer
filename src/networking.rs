@@ -155,5 +155,5 @@ pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) {
         ah,
     ].concat();
     if DEBUG { println!("{:?}", &buf); }
-    socket.send(&buf);
+    socket.send(&buf).ok();
 }

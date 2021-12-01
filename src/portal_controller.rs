@@ -138,7 +138,7 @@ impl PortalController {
                         }
                     }
                     self.last_teleport_time = SystemTime::now();
-                    &self.portals[out_portal].reset_last_used();
+                    let _ = &self.portals[out_portal].reset_last_used();
                     return true;
                 }
             }

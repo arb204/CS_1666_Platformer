@@ -101,8 +101,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let mut level_cleared = false;
 
     // used to test the orientation of the portals for teleporting
-    let mut portal_blue_side = -1;
-    let mut portal_orange_side = -1;
+    let portal_blue_side = -1;
+    let portal_orange_side = -1;
 
     //level data
     let mut current_level = 0; // what level are we on?
@@ -117,8 +117,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
             player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
             player1.respawn();
-            block.set_start_pos(&player1, obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
-            block.respawn(&player1);
+            block.set_start_pos(obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
+            block.respawn();
         }
         if obj[0] == "portalblock" {
             let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
@@ -161,7 +161,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 Event::KeyDown{keycode: Some(Keycode::S), ..} =>
                 {
                     if block.carried() {
-                        block.put_down(&player1);
+                        block.put_down();
                     }
                     else if player1.collider.is_touching(&block.collider()) {
                         block.picked_up(&player1);
@@ -172,7 +172,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     //restart level
                     player1.respawn();
                     player1.portal.close_all();
-                    block.respawn(&player1);
+                    block.respawn();
                 },
                 _ => {},
             }
@@ -213,8 +213,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
                     player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
                     player1.respawn();
-                    block.set_start_pos(&player1, obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
-                    block.respawn(&player1);
+                    block.set_start_pos(obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
+                    block.respawn();
                 }
                 if obj[0] == "portalblock" {
                     let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
