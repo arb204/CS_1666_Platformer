@@ -55,7 +55,7 @@ impl ObjectController {
         // self.collider.set_y((self.y() + 20) as f32);
     }
 
-    pub fn respawn(&mut self, player: &Player) {
+    pub fn respawn(&mut self, player: &Player, x: f32, y: f32) {
         self.new_level = true;
         self.start_x = x;
         self.start_y = y;
