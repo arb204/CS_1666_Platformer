@@ -294,7 +294,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 let player_data = networking::unpack_player_data(&mut socket, &mut buf)
                     .unwrap();
 
-                let portal_pos: (f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
+                let portal_pos: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
                 player2_data = Some((player_data, portal_pos));
             }
         }
@@ -356,11 +356,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         }
         match player2_data {
             Some(_) => {
-                let portal_data: (f32, f32, f32, f32) = player2_data.unwrap().1;
-                let portal1 = (portal_data.0, portal_data.1, 0);
-                let portal2 = (portal_data.2, portal_data.3, 1);
-                let mut render_portal = |p: (f32, f32, i32)| {
-                    wincan.copy_ex(&portalsprite, Rect::new(500*p.2+125, 0, 125, 250), Rect::new(p.0 as i32, p.1 as i32, 60, 100), 0.0, None, false, false).unwrap();
+                let portal_data: (f32, f32, f32, f32, f32, f32) = player2_data.unwrap().1;
+                let portal1 = (portal_data.0, portal_data.1, 0, portal_data.4);
+                let portal2 = (portal_data.2, portal_data.3, 1, portal_data.5);
+                let mut render_portal = |p: (f32, f32, i32, f32)| {
+                    wincan.copy_ex(&portalsprite, Rect::new(500*p.2+125, 0, 125, 250), Rect::new(p.0 as i32, p.1 as i32, 60, 100), p.3 as f64, None, false, false).unwrap();
                 };
                 render_portal(portal1);
                 render_portal(portal2);
