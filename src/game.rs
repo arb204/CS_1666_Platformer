@@ -112,7 +112,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
 
     let mut level = levels::parse_level("level0.txt");
-
+    let mut level_has_gate = false;
     // we read in the level from a file and add the necessary colliders and stuff
     for obj in level.iter() {
         if obj[0] == "start" {
@@ -138,8 +138,12 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             block.add_collider(new_collider);
         }
         if obj[0] == "gateplate" {
-            platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1)
+            platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1);
+            level_has_gate = true;
         }
+    }
+    if !level_has_gate {
+        platecon = PlateController::new(0, 0, 0, 0, 0, false);
     }
     /*
     Game state setup complete.
@@ -204,6 +208,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             let current_level_file = &format!("level{level}.txt", level = current_level);
             level = levels::parse_level(current_level_file);
 
+            level_has_gate = false;
             // we read in the next level
             for obj in level.iter() {
                 if obj[0] == "start" {
@@ -229,8 +234,12 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     block.add_collider(new_collider);
                 }
                 if obj[0] == "gateplate" {
-                    platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1)
+                    platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1);
+                    level_has_gate = true;
                 }
+            }
+            if !level_has_gate {
+                platecon = PlateController::new(0, 0, 0, 0, 0, false);
             }
             player1.unstop();
             level_cleared = false;
