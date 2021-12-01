@@ -1,6 +1,7 @@
 use std::time::{Duration, SystemTime};
 
 use crate::rect_collider::RectCollider;
+use crate::plate_controller::PlateController;
 
 //#[derive(Copy, Clone)]
 pub struct PhysicsController {
@@ -128,7 +129,7 @@ impl PhysicsController {
     }
 
     // update: manage the character's state each frame
-    pub fn update(&mut self) {
+    pub fn update(&mut self, platecon: PlateController) {
         //maybe we don't want the character to move (like finishing a level)
         if self.can_move {
             //move the character if necessary
@@ -156,6 +157,25 @@ impl PhysicsController {
                     self.is_grounded = true;
                 }
             }
+            // are we hitting a closed gate?
+            if platecon.active_gate_collider().is_touching(&my_collider_x) {
+                x_valid = false;
+            }
+            if platecon.active_gate_collider().is_touching(&my_collider_y) {
+                y_valid = false;
+                if my_collider_y.y() < platecon.active_gate_collider().y() {
+                    self.y = platecon.active_gate_collider().y() - 100.0;
+                } else {
+                    self.fall_speed = 0.0;
+                }
+            }
+            if platecon.active_gate_collider().contains_point(self.x+50.0, self.y+105.0) {
+                if self.fall_speed < 0.0 {
+                    y_valid = true;
+                }
+                self.is_grounded = true;
+            }
+            // check if x and y are valid
             if x_valid {
                 self.x = (self.x + self.speed).clamp(0.0, 1211.0);  // replace 1200.0 later with (CAM_W - TILE_SIZE) vars
             }
