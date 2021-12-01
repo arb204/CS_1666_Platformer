@@ -19,6 +19,7 @@ mod hint_system;
 mod object_controller;
 mod portal_traversible;
 mod levels;
+mod plate_controller;
 
 fn main() {
 	let (sdl_cxt, wincan) = setup_sdl_and_window();

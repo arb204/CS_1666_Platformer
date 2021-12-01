@@ -88,7 +88,7 @@ impl PortalController {
         if can_teleport {
             for i in 0..self.portals.len() {
                 // we can only use each portal once every 100ms
-                if self.portals[i].last_used()+Duration::from_millis(250) < SystemTime::now() && player_collider.is_touching(&self.portals[i].collider()) {
+                if self.portals[i].last_used()+Duration::from_millis(500) < SystemTime::now() && player_collider.is_touching(&self.portals[i].collider()) {
                     let in_portal = i;
                     let out_portal = (i+1)%self.portals.len();
                     let in_dir = self.portals[in_portal].rotation+180.0;
@@ -145,133 +145,6 @@ impl PortalController {
         }
         return false;
     }
-    /*pub fn teleport(&mut self, player_collider: &mut RectCollider, player_physics: &mut PhysicsController, portal_blue_side: &i32, portal_orange_side: &i32) {
-        // are both portals out? (aka, should the player be allowed to teleport?)
-        let mut can_teleport = true;
-        for p in &self.portals {
-            if !p.is_open() { can_teleport = false; }
-        }
-
-        
-        if can_teleport {
-            // used for converving momentum
-            let mut speed = player_physics.speed();
-            let mut fall_speed = player_physics.fall_speed();
-            if player_collider.is_touching(&self.portal_colliders[0]) && self.has_teleported_blue == 0 {
-                // dissalow player to jump while coming out of a portal
-                player_physics.set_jumps_used(1);
-                // portal exited is on the left wall
-                if *portal_orange_side == 0 {
-                    player_physics.set_x(self.portal_colliders[1].x() + 30.0);
-                    player_physics.set_y(self.portal_colliders[1].y());
-
-                    // conserve momentum through portal
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the right wall
-                else if *portal_orange_side == 1 {
-                    player_physics.set_x(self.portal_colliders[1].x() - 60.0);
-                    player_physics.set_y(self.portal_colliders[1].y());
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the cieling
-                else if *portal_orange_side == 2 {
-                    player_physics.set_x(self.portal_colliders[1].x());
-                    player_physics.set_y(self.portal_colliders[1].y() + 30.0);
-
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
-                    }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
-                }
-                // portal exited is on the floor
-                else if *portal_orange_side == 3 {
-                    player_physics.set_x(self.portal_colliders[1].x());
-                    player_physics.set_y(self.portal_colliders[1].y() - 30.0);
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
-                    }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
-                }
-                self.has_teleported_orange = 1;
-            }
-            if player_collider.is_touching(&self.portal_colliders[1]) && self.has_teleported_orange == 0 {
-                // dissalow player to jump while coming out of a portal
-                player_physics.set_jumps_used(1);
-                // portal exited is on the left wall
-                if *portal_blue_side == 0 {
-                    player_physics.set_x(self.portal_colliders[0].x() + 30.0);
-                    player_physics.set_y(self.portal_colliders[0].y());
-
-                    // conserve momentum through portal
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the right wall
-                else if *portal_blue_side == 1 {
-                    player_physics.set_x(self.portal_colliders[0].x() - 60.0);
-                    player_physics.set_y(self.portal_colliders[0].y());
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the cieling
-                else if *portal_blue_side == 2 {
-                    player_physics.set_x(self.portal_colliders[0].x());
-                    player_physics.set_y(self.portal_colliders[0].y() + 30.0);
-
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
-                    }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
-                }
-                // portal exited is on the floor
-                else if *portal_blue_side == 3 {
-                    player_physics.set_x(self.portal_colliders[0].x());
-                    player_physics.set_y(self.portal_colliders[0].y() - 30.0);
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
-                    }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
-                }
-                self.has_teleported_blue = 1;
-            }
-            // makes sure player doesn't rapidly teleport back and forth or get stuck in a wall
-            if !player_collider.is_touching(&self.portal_colliders[0]) && !player_collider.is_touching(&self.portal_colliders[1]) {
-                self.has_teleported_orange = 0;
-                self.has_teleported_blue = 0;
-            }
-        }
-    }*/
 
     //next_rotation: returns a float indicating the angle of the next frame
     pub fn next_rotation(&mut self, mouse_x:i32, mouse_y: i32) -> f32 {
@@ -296,7 +169,7 @@ impl PortalController {
                 let pp = portal_point.unwrap();
                 let rp = rotation_point.unwrap();
                 //portals can't overlap
-                if ((pp.0 - self.portals[1-index].x).powf(2.0) + (pp.1 - self.portals[1-index].y).powf(2.0)).powf(0.5) < 90.0 {
+                if ((pp.0 - (self.portals[1-index].x()+30.0)).powf(2.0) + (pp.1 - (self.portals[1-index].y()+50.0)).powf(2.0)).powf(0.5) < 130.0 {
                     self.last_portal_used = index as i8;
                     self.last_portal_time = SystemTime::now();
                     return 0;
@@ -331,7 +204,7 @@ impl PortalController {
                 };
                 // we hit a surface, but is it valid?
                 for i in &self.invalid_portal_surfaces {
-                    if i.is_touching(&RectCollider::new(pp.0 as f32, pp.1 as f32, 5.0, 5.0)) {
+                    if i.is_touching(&RectCollider::new(pp.0 as f32-2.5, pp.1 as f32-2.5, 5.0, 5.0)) {
                         return -1;
                     }
                 }
@@ -401,10 +274,10 @@ impl Portal {
         self.x = new_x;
         self.y = new_y;
         self.rotation = new_rot;
-        self.collider.set_x(new_x);
-        self.collider.set_y(new_y);
-        self.collider.set_width(if new_rot == 0.0 || new_rot == 180.0 {60.0} else {100.0});
-        self.collider.set_height(if new_rot == 0.0 || new_rot == 180.0 {60.0} else {100.0});
+        self.collider.set_x(new_x+if new_rot == 0.0 || new_rot == 180.0 {10.0} else {-5.0});
+        self.collider.set_y(new_y+if new_rot == 0.0 || new_rot == 180.0 {15.0} else {45.0});
+        self.collider.set_width(if new_rot == 0.0 || new_rot == 180.0 {40.0} else {70.0});
+        self.collider.set_height(if new_rot == 0.0 || new_rot == 180.0 {70.0} else {40.0});
     }
 
     // close: closes a portal by moving it offscreen
