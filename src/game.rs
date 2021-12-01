@@ -386,8 +386,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
         let duration_should_sleep = FRAME_TIME.checked_sub(tick.elapsed());
         match duration_should_sleep {
-            Some(duration) => thread::sleep(duration),
-            None => {}
+            Some(duration) => {
+                // println!("elapsed time: {:?}\nduration should sleep: {:?}", tick.elapsed(), duration);
+                thread::sleep(duration);
+            },
+            None => {println!("60fps implies time between frames = 15ms\nelapsed time was: {:?}\n", tick.elapsed())}
         }
     }
     credits::show_credits(wincan, event_pump);
