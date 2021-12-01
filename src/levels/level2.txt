@@ -5,4 +5,4 @@ nonportalblock-640-320-9-1
 nonportalblock-64-192-4-2
 nonportalblock-64-640-3-2
 nonportalblock-960-656-4-2
-start-75-100
+start-75-100-150-500
