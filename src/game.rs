@@ -153,6 +153,12 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                         block.picked_up(&player1);
                     }
                 },
+                Event::KeyDown{keycode: Some(Keycode::R), ..} =>
+                {
+                    //restart level
+                    player1.respawn();
+                    block.respawn(&player1);
+                },
                 _ => {},
             }
         }
@@ -190,8 +196,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 if obj[0] == "start" {
                     player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
                     player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
-                    // block.setx();
-                    // block.sety();
                     player1.respawn();
                     block.respawn(&player1);
                 }
