@@ -9,6 +9,8 @@ pub struct ObjectController {
     new_level: bool,
     fall_speed: f32,
     pub offset: (f32, f32),
+    start_x: f32,
+    start_y: f32,
 }
 
 impl ObjectController {
@@ -21,7 +23,9 @@ impl ObjectController {
             in_air: false,
             new_level: false,
             fall_speed: 0.0,
-            offset: (0.0, 0.0)
+            offset: (0.0, 0.0),
+            start_x: 0.0,
+            start_y: 0.0,
         }
     }
 
@@ -53,6 +57,8 @@ impl ObjectController {
 
     pub fn respawn(&mut self, player: &Player) {
         self.new_level = true;
+        self.start_x = x;
+        self.start_y = y;
         // self.fall_speed += 1.0;
         // self.collider.set_y((self.y() + 20) as f32);
     }
@@ -62,8 +68,8 @@ impl ObjectController {
             self.new_level = false;
             self.carried = false;
             self.in_air = true;
-            self.collider.set_x((player.collider.x()-self.offset.0 + 70.0) as f32);
-            self.collider.set_y((player.collider.y()-self.offset.1) as f32);
+            self.collider.set_x(self.start_x);
+            self.collider.set_y(self.start_y);
         }
         
         if self.carried {
