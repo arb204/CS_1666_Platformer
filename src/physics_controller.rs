@@ -58,6 +58,7 @@ impl PhysicsController {
     //pub fn start_y(&self) -> f32 { self.start_y }
     pub fn x(&self) -> f32 { self.x }
     pub fn y(&self) -> f32 { self.y }
+    pub fn position_rect(&self) -> (i32, i32, u32, u32) { (self.x as i32, self.y as i32, 69, 98)}
     pub fn speed(&self) -> f32 { self.speed }
     pub fn fall_speed(&self) -> f32 { self.fall_speed }
     pub fn is_grounded(&self) -> bool { self.is_grounded }

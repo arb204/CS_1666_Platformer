@@ -1,3 +1,4 @@
+use sdl2::rect::Rect;
 use sdl2::render::Texture;
 
 use crate::animation_controller::AnimController;
@@ -11,7 +12,8 @@ pub struct Player {
     pub collider: RectCollider,
     pub anim: AnimController,
     pub portal: PortalController,
-    dead: bool
+    dead: bool,
+    pub flip_horizontal: bool,
 }
 
 impl Player {
@@ -23,7 +25,8 @@ impl Player {
             collider: _collider,
             anim: _anim,
             portal: _portal,
-            dead: false
+            dead: false,
+            flip_horizontal: false,
         }
     }
     pub fn is_dead(&self) -> bool { self.dead }

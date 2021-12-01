@@ -1,10 +1,14 @@
 use std::borrow::Borrow;
+use std::convert::TryFrom;
+use std::error::Error;
 use std::net::UdpSocket;
 use crate::player::Player;
 
 // try getting from nslookup
 pub const SEND_ADDR: &str = "127.0.0.1:34255";
 pub const REC_ADDR: &str = "127.0.0.1:34254";
+const PACKET_SIZE: usize = 44;
+const DEBUG: bool = false;
 
 #[derive(Clone, Copy)]
 pub(crate) enum NetworkingMode {
@@ -22,22 +26,19 @@ pub(crate) fn get_receiving_socket() -> UdpSocket {
 
 fn get_socket(address: &str) -> UdpSocket {
     let socket = UdpSocket::bind(address).expect("couldn't bind to address");
-    let debug = false;
-    if debug {
-        println!("{:?}", socket);
-    }
     socket
 }
 
-pub(crate) fn get_packet_buffer(socket: &mut UdpSocket) -> [u8; 24] {
-    let mut buf: [u8; 24] = [0; 24];
+pub(crate) fn get_packet_buffer(socket: &mut UdpSocket) -> [u8; PACKET_SIZE] {
+    let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
     let (_amt, _src) =  socket.recv_from(& mut buf).unwrap();
     return buf;
 }
 
 
 // refactor to make safe -- return result
-pub(crate) fn get_player_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8; 24]) -> (f32, f32) {
+pub(crate) fn unpack_player_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_SIZE])
+                                 -> Result<(f32, f32, bool, i32, i32, u32, u32), String> {
     let mut xpos: [u8; 4] = [0; 4];
     for i in 0..4 {
         xpos[i] = buf[i];
@@ -47,34 +48,71 @@ pub(crate) fn get_player_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8
     for i in 4..8 {
         ypos[i-4] = buf[i];
     }
+    let mut flip: [u8; 4] = [0; 4];
+    for i in 8..12 {
+        flip[i-8] = buf[i];
+    }
+
+    let mut ax :[u8; 4] = [0; 4];
+    for i in 28..32 {
+        ax[i-28] = buf[i];
+    }
+
+    let mut ay :[u8; 4] = [0; 4];
+    for i in 32..36 {
+        ay[i-32] = buf[i];
+    }
+
+    let mut aw :[u8; 4] = [0; 4];
+    for i in 36..40 {
+        aw[i-36] = buf[i];
+    }
+
+    let mut ah :[u8; 4] = [0; 4];
+    for i in 40..44 {
+        ah[i-40] = buf[i];
+    }
 
     let x = f32::from_le_bytes(xpos);
-
     let y = f32::from_le_bytes(ypos);
-    
-    (x, y)
+    let flip = u32::from_le_bytes(flip);
+    if flip != 1 && flip != 0 {
+        return Err(String::from("Error: player flip is neither 1 nor 0"));
+    }
+    let flip = flip == 1;
+    let ax = i32::from_le_bytes(ax);
+    let ay = i32::from_le_bytes(ay);
+    let aw = u32::from_le_bytes(aw);
+    let ah = u32::from_le_bytes(ah);
+    // debug
+    let tup = (x, y, flip, ax, ay, aw, ah);
+    if DEBUG {
+        println!("tup = {:?}", tup);
+        println!("buf = {:?}", buf);
+    }
+    Ok(tup)
 }
 
 // refactor to make safe -- return result
-pub(crate) fn get_portal_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8; 24]) -> (f32, f32, f32, f32) {
+pub(crate) fn unpack_portal_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32) {
     let mut xpos_1: [u8; 4] = [0; 4];
-    for i in 8..12 {
-        xpos_1[i-8] = buf[i];
+    for i in 12..16 {
+        xpos_1[i-12] = buf[i];
     }
 
     let mut ypos_1: [u8; 4] = [0; 4];
-    for i in 12..16 {
-        ypos_1[i-12] = buf[i];
+    for i in 16..20 {
+        ypos_1[i-16] = buf[i];
     }
 
     let mut xpos_2: [u8; 4] = [0; 4];
-    for i in 16..20 {
-        xpos_2[i-16] = buf[i];
+    for i in 20..24 {
+        xpos_2[i-20] = buf[i];
     }
 
     let mut ypos_2: [u8; 4] = [0; 4];
-    for i in 20..24 {
-        ypos_2[i-20] = buf[i];
+    for i in 24..28 {
+        ypos_2[i-24] = buf[i];
     }
 
     let x1 = f32::from_le_bytes(xpos_1);
@@ -87,15 +125,35 @@ pub(crate) fn get_portal_position_and_flip(socket: &mut UdpSocket, buf: &mut [u8
     (x1,y1,x2,y2)
 }
 
-pub(crate) fn send_data(player: &mut Player, socket: &UdpSocket, _flip: bool) {
+pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) {
     let player_xpos = player.physics.x().to_le_bytes(); 
     let player_ypos = player.physics.y().to_le_bytes();
+    let flip: u32 = if player.flip_horizontal { 1 } else { 0 };
+    let flip = flip.to_le_bytes();
+    let anim = player.anim.next_anim();
+    let ax = anim.x().to_le_bytes();
+    let ay = ((2*anim.height()) as i32 + anim.y()).to_le_bytes(); // to get to green characters
+    let aw = anim.width().to_le_bytes();
+    let ah = anim.height().to_le_bytes();
+
 
     let portal_1_x: [u8; 4] = player.portal.portals[0].x().to_le_bytes();
     let portal_1_y: [u8; 4] = player.portal.portals[0].y().to_le_bytes();
     let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
     let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
-    let buf = [player_xpos, player_ypos, portal_1_x, portal_1_y, portal_2_x, portal_2_y].concat();
+    let buf = [
+        player_xpos,
+        player_ypos,
+        flip,
+        portal_1_x,
+        portal_1_y,
+        portal_2_x,
+        portal_2_y,
+        ax,
+        ay,
+        aw,
+        ah,
+    ].concat();
+    if DEBUG { println!("{:?}", &buf); }
     socket.send(&buf).ok();
-
 }
