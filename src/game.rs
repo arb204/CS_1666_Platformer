@@ -320,7 +320,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         wincan.clear();
         wincan.copy(&castle_bg, None, None).ok();
 
-        render_player(&p1sprite, &mut wincan, &mut player1, player1.is_looking_left)?;
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
         // draw_collision_boxes(&mut wincan, &player1);
         // draw the surfaces
