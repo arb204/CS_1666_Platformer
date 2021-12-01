@@ -166,6 +166,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 {
                     //restart level
                     player1.respawn();
+                    player1.portal.close_all();
                     block.respawn(&player1);
                 },
                 _ => {},
@@ -193,6 +194,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             //this is just until we get the level changing logic completed
             if current_level == final_level { break 'gameloop; }
             player1.reset_colliders();
+            block.reset_colliders();
             current_level += 1;
             // this is what I'm going with until I figure out how
             // to do "level"+current_level+".txt"
