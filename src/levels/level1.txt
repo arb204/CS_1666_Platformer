@@ -7,4 +7,4 @@ nonportalblock-544-272-3-2
 nonportalblock-672-400-1-4
 nonportalblock-0-656-20-1
 gateplate-576-592-672-64-208-1
-start-100-500
+start-100-500-450-200
