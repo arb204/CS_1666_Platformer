@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 use std::net::UdpSocket;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::convert::TryInto;
+use std::ops::Sub;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -32,6 +33,7 @@ const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 const FRAME_RATE: u64 = 60;
+const FRAME_TIME: Duration = Duration::from_millis(1000 / FRAME_RATE);
 
 pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                   mouse: MouseUtil, network_mode: networking::NetworkingMode)
@@ -152,6 +154,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     Begin game update loop.
      */
     'gameloop: loop {
+        // Timer tick
+        let tick = Instant::now();
         /*
         Begin game state update.
          */
@@ -380,8 +384,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         End rendering current frame.
          */
 
-        //lock the frame rate
-        thread::sleep(Duration::from_millis(1000/ FRAME_RATE));
+        let duration_should_sleep = FRAME_TIME.checked_sub(tick.elapsed());
+        match duration_should_sleep {
+            Some(duration) => thread::sleep(duration),
+            None => {}
+        }
     }
     credits::show_credits(wincan, event_pump);
     Ok(())
