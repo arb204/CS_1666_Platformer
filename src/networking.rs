@@ -96,6 +96,6 @@ pub(crate) fn send_data(player: &mut Player, socket: &UdpSocket, _flip: bool) {
     let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
     let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
     let buf = [player_xpos, player_ypos, portal_1_x, portal_1_y, portal_2_x, portal_2_y].concat();
-    socket.send(&buf);
+    socket.send(&buf).ok();
 
 }
