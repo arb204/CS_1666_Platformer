@@ -15,7 +15,7 @@ Template
    * See discord video
    * Make portals hit box in wall instead of out of wall
 
-2. Momentum is conserved through levels
+2. Portal Can be placed on non-portal walls
    * Reporter: Evan
-   * Hit level clear hit box with a decent amount of speed. This could create unwanted actions performed in the next level.
-   * Reset Player Velocity to Zero upon hitting level clear hit box.
+   * Try to Place Portal on left wall in level 2 or on ceiling on level 4.
+   * Fix checking system on portal creation.
