@@ -296,12 +296,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
                 let portal_pos: (f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
                 player2_data = Some((player_data, portal_pos));
-
-                // /*for p in &player1.portal.portals {
-                //     wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
-                // }*/
-                // wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[0].color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
-                // wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
             }
         }
         /*
