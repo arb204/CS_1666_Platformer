@@ -116,14 +116,17 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         if obj[0] == "portalblock" {
             let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
             player1.add_collider(new_collider, "portalblock");
+            block.add_collider(new_collider);
         }
         if obj[0] == "nonportalblock" {
             let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
             player1.add_collider(new_collider, "nonportalblock");
+            block.add_collider(new_collider);
         }
         if obj[0] == "portalglass" {
             let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
             player1.add_collider(new_collider, "portalglass");
+            block.add_collider(new_collider);
         }
     }
     /*
@@ -187,20 +190,25 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 if obj[0] == "start" {
                     player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
                     player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
+                    // block.setx();
+                    // block.sety();
                     player1.respawn();
                     block.respawn(&player1);
                 }
                 if obj[0] == "portalblock" {
                     let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
                     player1.add_collider(new_collider, "portalblock");
+                    block.add_collider(new_collider);
                 }
                 if obj[0] == "nonportalblock" {
                     let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
                     player1.add_collider(new_collider, "nonportalblock");
+                    block.add_collider(new_collider);
                 }
                 if obj[0] == "portalglass" {
                     let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
                     player1.add_collider(new_collider, "portalglass");
+                    block.add_collider(new_collider);
                 }
             }
             player1.unstop();
