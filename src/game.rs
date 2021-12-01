@@ -225,7 +225,9 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         }
 
 
+        // update all the objects in the current game state
         player1.update();
+        block.update(&player1);
 
         // do we need to flip the player?
         flip = if level_cleared {
@@ -237,8 +239,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         } else {
             flip
         };
-
-        block.update(&player1);
 
         // create the portals
         if event_pump.mouse_state().left() {
