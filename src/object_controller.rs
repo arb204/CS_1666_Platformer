@@ -6,6 +6,7 @@ pub struct ObjectController {
     obstacles: Vec<RectCollider>,
     carried: bool,
     in_air: bool,
+    new_level: bool,
     fall_speed: f32,
     pub offset: (f32, f32),
 }
@@ -18,6 +19,7 @@ impl ObjectController {
             obstacles: vec!(),
             carried: false,
             in_air: false,
+            new_level: false,
             fall_speed: 0.0,
             offset: (0.0, 0.0)
         }
@@ -27,6 +29,7 @@ impl ObjectController {
     pub fn y(&self) -> i32 { self.collider.y() as i32}
     pub fn carried(&self) -> bool { self.carried }
     pub fn in_air(&self) -> bool { self.in_air }
+    pub fn new_level(&self) -> bool { self.new_level }
     pub fn fall_speed(&self) -> f32 { self.fall_speed }
     pub fn collider(&self) -> RectCollider { self.collider }
 
@@ -48,7 +51,21 @@ impl ObjectController {
         // self.collider.set_y((self.y() + 20) as f32);
     }
 
+    pub fn respawn(&mut self, player: &Player) {
+        self.new_level = true;
+        // self.fall_speed += 1.0;
+        // self.collider.set_y((self.y() + 20) as f32);
+    }
+
     pub fn update(&mut self, player: &Player) {
+        if self.new_level {
+            self.new_level = false;
+            self.carried = false;
+            self.in_air = true;
+            self.collider.set_x((player.collider.x()-self.offset.0 + 70.0) as f32);
+            self.collider.set_y((player.collider.y()-self.offset.1) as f32);
+        }
+        
         if self.carried {
             self.collider.set_x((player.collider.x()-self.offset.0) as f32);
             self.collider.set_y((player.collider.y()-self.offset.1) as f32);

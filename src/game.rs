@@ -193,6 +193,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     // block.setx();
                     // block.sety();
                     player1.respawn();
+                    block.respawn(&player1);
                 }
                 if obj[0] == "portalblock" {
                     let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
