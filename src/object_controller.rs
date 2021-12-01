@@ -55,12 +55,15 @@ impl ObjectController {
         // self.collider.set_y((self.y() + 20) as f32);
     }
 
-    pub fn respawn(&mut self, player: &Player, x: f32, y: f32) {
+    pub fn respawn(&mut self, player: &Player) {
         self.new_level = true;
-        self.start_x = x;
-        self.start_y = y;
         // self.fall_speed += 1.0;
         // self.collider.set_y((self.y() + 20) as f32);
+    }
+
+    pub fn set_start_pos(&mut self, player: &Player, x: f32, y: f32) {
+        self.start_x = x;
+        self.start_y = y;
     }
 
     pub fn update(&mut self, player: &Player) {
