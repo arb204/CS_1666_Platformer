@@ -106,11 +106,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let mut portal_orange_side = -1;
 
     //level data
-    let mut current_level = 4; // what level are we on?
+    let mut current_level = 0; // what level are we on?
     let final_level = 4; // what level is the last one?
 
 
-    let mut level = levels::parse_level("level4.txt");
+    let mut level = levels::parse_level("level0.txt");
 
     // we read in the level from a file and add the necessary colliders and stuff
     for obj in level.iter() {
