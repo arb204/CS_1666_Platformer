@@ -7,7 +7,7 @@ use crate::player::Player;
 // try getting from nslookup
 pub const SEND_ADDR: &str = "127.0.0.1:34255";
 pub const REC_ADDR: &str = "127.0.0.1:34254";
-const PACKET_SIZE: usize = 44;
+const PACKET_SIZE: usize = 52;
 const DEBUG: bool = false;
 
 #[derive(Clone, Copy)]
@@ -94,7 +94,7 @@ pub(crate) fn unpack_player_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_S
 }
 
 // refactor to make safe -- return result
-pub(crate) fn unpack_portal_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32) {
+pub(crate) fn unpack_portal_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32, f32, f32) {
     let mut xpos_1: [u8; 4] = [0; 4];
     for i in 12..16 {
         xpos_1[i-12] = buf[i];
@@ -115,14 +115,24 @@ pub(crate) fn unpack_portal_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_S
         ypos_2[i-24] = buf[i];
     }
 
+    let mut rotation1: [u8; 4] = [0; 4];
+    for i in 44..48 {
+        rotation1[i-44] = buf[i];
+    }
+
+    let mut rotation2: [u8; 4] = [0; 4];
+    for i in 48..52 {
+        rotation2[i-48] = buf[i];
+    }
+
     let x1 = f32::from_le_bytes(xpos_1);
     let y1 = f32::from_le_bytes(ypos_1);
-
     let x2 = f32::from_le_bytes(xpos_2);
     let y2 = f32::from_le_bytes(ypos_2);
+    let rotation1 = f32::from_le_bytes(rotation1);
+    let rotation2 = f32::from_le_bytes(rotation2);
     
-    // TODO: add getting flip
-    (x1,y1,x2,y2)
+    (x1,y1,x2,y2, rotation1, rotation2)
 }
 
 pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) {
@@ -141,6 +151,8 @@ pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) {
     let portal_1_y: [u8; 4] = player.portal.portals[0].y().to_le_bytes();
     let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
     let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
+    let portal_1_rotation:[u8; 4] = player.portal.portals[0].rotation().to_le_bytes();
+    let portal_2_rotation:[u8; 4] = player.portal.portals[1].rotation().to_le_bytes();
     let buf = [
         player_xpos,
         player_ypos,
@@ -153,6 +165,8 @@ pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) {
         ay,
         aw,
         ah,
+        portal_1_rotation,
+        portal_2_rotation,
     ].concat();
     if DEBUG { println!("{:?}", &buf); }
     socket.send(&buf).ok();
