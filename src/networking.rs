@@ -1,10 +1,11 @@
 use std::net::UdpSocket;
 use crate::player::Player;
+use crate::object_controller::ObjectController;
 
 // try getting from nslookup
 pub const SEND_ADDR: &str = "127.0.0.1:34255";
 pub const REC_ADDR: &str = "127.0.0.1:34254";
-const PACKET_SIZE: usize = 52;
+const PACKET_SIZE: usize = 64;
 const DEBUG: bool = false;
 
 #[derive(Clone, Copy)]
@@ -132,7 +133,36 @@ pub(crate) fn unpack_portal_data(buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32,
     (x1,y1,x2,y2, rotation1, rotation2)
 }
 
-pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) -> std::io::Result<usize> {
+pub(crate) fn unpack_block_data(buf: &mut [u8; PACKET_SIZE]) -> (i32, i32, bool){
+    let mut block_x: [u8; 4] = [0; 4];
+    for i in 52..56 {
+        block_x[i-52] = buf[i];
+    }
+
+    let mut block_y: [u8; 4] = [0; 4];
+    for i in 56..60 {
+        block_y[i-56] = buf[i];
+    }
+
+    let mut carried: [u8; 4] = [0; 4];
+    for i in 60..64 {
+        carried[i-60] = buf[i];
+    }
+
+    let block_x = i32::from_le_bytes(block_x);
+    let block_y = i32::from_le_bytes(block_y);
+    let carried = i32::from_le_bytes(carried);
+    let carried = match carried {
+        0 => false,
+        _ => true,
+    };
+
+    (block_x, block_y, carried)
+}
+
+pub(crate) fn pack_and_send_data(player: &mut Player, block: &mut ObjectController, socket: &UdpSocket) {
+
+    //Player Information
     let player_xpos = player.physics.x().to_le_bytes(); 
     let player_ypos = player.physics.y().to_le_bytes();
     let flip: u32 = if player.flip_horizontal { 1 } else { 0 };
@@ -143,13 +173,20 @@ pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) -> std
     let aw = anim.width().to_le_bytes();
     let ah = anim.height().to_le_bytes();
 
-
+    //Portal Information
     let portal_1_x: [u8; 4] = player.portal.portals[0].x().to_le_bytes();
     let portal_1_y: [u8; 4] = player.portal.portals[0].y().to_le_bytes();
     let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
     let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
     let portal_1_rotation:[u8; 4] = player.portal.portals[0].rotation().to_le_bytes();
     let portal_2_rotation:[u8; 4] = player.portal.portals[1].rotation().to_le_bytes();
+
+    //Block Information
+    let block_x: [u8; 4] = block.x().to_le_bytes();
+    let block_y: [u8; 4] = block.y().to_le_bytes();
+    let carried = block.carried() as i32;
+    let block_carried: [u8; 4] = carried.to_le_bytes();
+
     let buf = [
         player_xpos,
         player_ypos,
@@ -164,6 +201,9 @@ pub(crate) fn pack_and_send_data(player: &mut Player, socket: &UdpSocket) -> std
         ah,
         portal_1_rotation,
         portal_2_rotation,
+        block_x,
+        block_y,
+        block_carried,
     ].concat();
     if DEBUG { println!("{:?}", &buf); }
     return socket.send(&buf);
