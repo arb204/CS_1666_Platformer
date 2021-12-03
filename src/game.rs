@@ -287,7 +287,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 if let Err(e) = socket.connect(networking::REC_ADDR) {
                     println!("Failed to connect to {:?}", networking::REC_ADDR);
                 }
-                networking::pack_and_send_data(&mut player1, &socket);
+                networking::pack_and_send_data(&mut player1, &mut block, &socket);
             }
             networking::NetworkingMode::Receive => {
                 let mut socket = get_receiving_socket();
@@ -299,7 +299,9 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     .unwrap();
 
                 let portal_pos: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
-                player2_data = Some((player_data, portal_pos));
+
+                let block_data: (i32, i32, bool) =  networking::unpack_block_data(&mut buf);
+                player2_data = Some((player_data, portal_pos, block_data));
             }
         }
         /*
@@ -333,7 +335,23 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             }
         }
 
-        draw_block(&mut wincan, &block, &block_texture);
+        match network_mode {
+            networking::NetworkingMode::Send => {
+                draw_block(&mut wincan, &block, &block_texture);
+            },
+            networking::NetworkingMode::Receive => {
+                match player2_data {
+                    Some(_) => {
+                        let block_data = player2_data.unwrap().2;
+                        wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
+                        wincan.copy(&block_texture, None, Rect::new(block_data.0, block_data.1, TILE_SIZE/2, TILE_SIZE/2)).ok();
+                    },
+                    None => {}
+                }
+            }
+
+        }
+
         render_player(&p1sprite, &mut wincan, &mut player1)?;
         match player2_data {
             Some(_) => {
