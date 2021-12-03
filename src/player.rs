@@ -1,6 +1,3 @@
-use sdl2::rect::Rect;
-use sdl2::render::Texture;
-
 use crate::animation_controller::AnimController;
 use crate::physics_controller::PhysicsController;
 use crate::portal_controller::PortalController;
