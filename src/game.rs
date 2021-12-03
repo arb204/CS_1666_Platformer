@@ -107,34 +107,37 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let mut level = levels::parse_level("level0.txt");
     let mut level_has_gate = false;
     // we read in the level from a file and add the necessary colliders and stuff
-    for obj in level.iter() {
-        if obj[0] == "start" {
-            player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
-            player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
-            player1.respawn();
-            block.set_start_pos(obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
-            block.respawn();
+    let setup_level = |level| {
+        for obj in level.iter() {
+            if obj[0] == "start" {
+                player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
+                player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
+                player1.respawn();
+                block.set_start_pos(obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
+                block.respawn();
+            }
+            if obj[0] == "portalblock" {
+                let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap() * TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap() * TILE_SIZE) as f32);
+                player1.add_collider(new_collider, "portalblock");
+                block.add_collider(new_collider);
+            }
+            if obj[0] == "nonportalblock" {
+                let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap() * TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap() * TILE_SIZE) as f32);
+                player1.add_collider(new_collider, "nonportalblock");
+                block.add_collider(new_collider);
+            }
+            if obj[0] == "portalglass" {
+                let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap() * TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap() * TILE_SIZE) as f32);
+                player1.add_collider(new_collider, "portalglass");
+                block.add_collider(new_collider);
+            }
+            if obj[0] == "gateplate" {
+                platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1);
+                level_has_gate = true;
+            }
         }
-        if obj[0] == "portalblock" {
-            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, "portalblock");
-            block.add_collider(new_collider);
-        }
-        if obj[0] == "nonportalblock" {
-            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, "nonportalblock");
-            block.add_collider(new_collider);
-        }
-        if obj[0] == "portalglass" {
-            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, "portalglass");
-            block.add_collider(new_collider);
-        }
-        if obj[0] == "gateplate" {
-            platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1);
-            level_has_gate = true;
-        }
-    }
+    };
+    setup_level(level);
     if !level_has_gate {
         platecon = PlateController::new(0, 0, 0, 0, 0, false);
     }
@@ -205,34 +208,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
             level_has_gate = false;
             // we read in the next level
-            for obj in level.iter() {
-                if obj[0] == "start" {
-                    player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
-                    player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
-                    player1.respawn();
-                    block.set_start_pos(obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
-                    block.respawn();
-                }
-                if obj[0] == "portalblock" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, "portalblock");
-                    block.add_collider(new_collider);
-                }
-                if obj[0] == "nonportalblock" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, "nonportalblock");
-                    block.add_collider(new_collider);
-                }
-                if obj[0] == "portalglass" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, "portalglass");
-                    block.add_collider(new_collider);
-                }
-                if obj[0] == "gateplate" {
-                    platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1);
-                    level_has_gate = true;
-                }
-            }
+            setup_level(level);
+
             if !level_has_gate {
                 platecon = PlateController::new(0, 0, 0, 0, 0, false);
             }
@@ -313,15 +290,18 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
         // draw_collision_boxes(&mut wincan, &player1);
         // draw the surfaces
+        let draw_surface = |surface_texture| {
+            draw_surface(&mut wincan, &surface_texture, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+        };
         for obj in level.iter() {
             if obj[0] == "portalblock" {
-                draw_surface(&mut wincan, &portal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+                draw_surface(&portal_surface);
             }
             if obj[0] == "nonportalblock" {
-                draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+                draw_surface(&nonportal_surface);
             }
             if obj[0] == "portalglass" {
-                draw_surface(&mut wincan, &portal_glass, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+                draw_surface(&portal_glass);
             }
             if obj[0] == "gateplate" {
                 draw_plate(&mut wincan, &pressure_plate, platecon);
@@ -343,7 +323,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     None => {}
                 }
             }
-
         }
 
         render_player(&p1sprite, &mut wincan, &mut player1)?;
