@@ -292,7 +292,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 let player_data = networking::unpack_player_data(&mut buf)
                     .unwrap();
 
-                let portal_pos: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
+                let portal_pos: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut buf);
 
                 let block_data: (i32, i32, bool) =  networking::unpack_block_data(&mut buf);
                 player2_data = Some((player_data, portal_pos, block_data));

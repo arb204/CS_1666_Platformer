@@ -160,7 +160,7 @@ pub(crate) fn unpack_block_data(buf: &mut [u8; PACKET_SIZE]) -> (i32, i32, bool)
     (block_x, block_y, carried)
 }
 
-pub(crate) fn pack_and_send_data(player: &mut Player, block: &mut ObjectController, socket: &UdpSocket) {
+pub(crate) fn pack_and_send_data(player: &mut Player, block: &mut ObjectController, socket: &UdpSocket) -> std::io::Result<usize> {
 
     //Player Information
     let player_xpos = player.physics.x().to_le_bytes(); 
