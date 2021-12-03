@@ -1,9 +1,7 @@
 use std::collections::HashSet;
-use std::net::UdpSocket;
 use std::thread;
 use std::time::{Duration, Instant};
 use std::convert::TryInto;
-use std::ops::Sub;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -50,7 +48,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let cursor = texture_creator.load_texture("assets/in_game/cursor/cursor.png").unwrap();
     let portalsprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
     let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
-    let stone_sprite = texture_creator.load_texture("assets/in_game/level/purple_floor/purple_floor_tile.png").unwrap();
     let door_sheet = texture_creator.load_texture("assets/in_game/level/door/doors_sprite_sheet.png").unwrap();
     let level_cleared_msg_sprite = texture_creator.load_texture("assets/in_game/message/level_cleared/level_cleared_msg.png").unwrap();
     let castle_bg = texture_creator.load_texture("assets/in_game/level/background/castle/castle-bg.png").unwrap();
@@ -101,10 +98,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let mut block = ObjectController::new(block_collider);
 
     let mut level_cleared = false;
-
-    // used to test the orientation of the portals for teleporting
-    let portal_blue_side = -1;
-    let portal_orange_side = -1;
 
     //level data
     let mut current_level = 0; // what level are we on?
@@ -285,17 +278,18 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             networking::NetworkingMode::Send => {
                 let socket = get_sending_socket();
                 if let Err(e) = socket.connect(networking::REC_ADDR) {
-                    println!("Failed to connect to {:?}", networking::REC_ADDR);
+                    println!("Failed to connect to {:?}\nGetting error: {}", networking::REC_ADDR, e);
                 }
                 networking::pack_and_send_data(&mut player1, &mut block, &socket);
             }
             networking::NetworkingMode::Receive => {
                 let mut socket = get_receiving_socket();
                 if let Err(e) = socket.connect(networking::SEND_ADDR) {
-                    println!("Failed to connect to {:?}", networking::SEND_ADDR);
+                    println!("Failed to connect to {:?}\nGetting error: {}", networking::SEND_ADDR, e);
+                    continue
                 }
                 let mut buf = networking::get_packet_buffer(&mut socket);
-                let player_data = networking::unpack_player_data(&mut socket, &mut buf)
+                let player_data = networking::unpack_player_data(&mut buf)
                     .unwrap();
 
                 let portal_pos: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
@@ -404,8 +398,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
         let duration_should_sleep = FRAME_TIME.checked_sub(tick.elapsed());
         match duration_should_sleep {
-            Some(duration) => thread::sleep(duration),
-            None => {}
+            Some(duration) => {
+                // println!("elapsed time: {:?}\nduration should sleep: {:?}", tick.elapsed(), duration);
+                thread::sleep(duration);
+            },
+            None => {println!("60fps implies time between frames = 15ms\nelapsed time was: {:?}\n", tick.elapsed())}
         }
     }
     credits::show_credits(wincan, event_pump);
@@ -440,16 +437,6 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
 fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController, sprite: &Texture) {
     wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
     wincan.copy(sprite, None, Rect::new(block.x() as i32, block.y() as i32, TILE_SIZE/2, TILE_SIZE/2)).ok();
-}
-
-fn draw_stone_floor(wincan: &mut WindowCanvas, stone_sprite: &Texture) {
-    let mut i = 0;
-    while i < 130 {
-        let src = Rect::new(((i % 4) * TILE_SIZE) as i32, 0, TILE_SIZE, TILE_SIZE);
-        let pos = Rect::new((i * 10) as i32, (720 - TILE_SIZE) as i32, TILE_SIZE, TILE_SIZE);
-        wincan.copy(&stone_sprite, src, pos).ok();
-        i += 1;
-    }
 }
 
 fn draw_surface(wincan: &mut WindowCanvas, sprite: &Texture, x: i32, y: i32, width: i32, height: i32) {

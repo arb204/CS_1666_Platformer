@@ -1,6 +1,3 @@
-use std::borrow::Borrow;
-use std::convert::TryFrom;
-use std::error::Error;
 use std::net::UdpSocket;
 use crate::player::Player;
 use crate::object_controller::ObjectController;
@@ -38,7 +35,7 @@ pub(crate) fn get_packet_buffer(socket: &mut UdpSocket) -> [u8; PACKET_SIZE] {
 
 
 // refactor to make safe -- return result
-pub(crate) fn unpack_player_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_SIZE])
+pub(crate) fn unpack_player_data(buf: &mut [u8; PACKET_SIZE])
                                  -> Result<(f32, f32, bool, i32, i32, u32, u32), String> {
     let mut xpos: [u8; 4] = [0; 4];
     for i in 0..4 {
@@ -95,7 +92,7 @@ pub(crate) fn unpack_player_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_S
 }
 
 // refactor to make safe -- return result
-pub(crate) fn unpack_portal_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32, f32, f32) {
+pub(crate) fn unpack_portal_data(buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32, f32, f32) {
     let mut xpos_1: [u8; 4] = [0; 4];
     for i in 12..16 {
         xpos_1[i-12] = buf[i];
@@ -132,7 +129,7 @@ pub(crate) fn unpack_portal_data(socket: &mut UdpSocket, buf: &mut [u8; PACKET_S
     let y2 = f32::from_le_bytes(ypos_2);
     let rotation1 = f32::from_le_bytes(rotation1);
     let rotation2 = f32::from_le_bytes(rotation2);
-    
+
     (x1,y1,x2,y2, rotation1, rotation2)
 }
 
@@ -209,5 +206,5 @@ pub(crate) fn pack_and_send_data(player: &mut Player, block: &mut ObjectControll
         block_carried,
     ].concat();
     if DEBUG { println!("{:?}", &buf); }
-    socket.send(&buf).ok();
+    return socket.send(&buf);
 }
