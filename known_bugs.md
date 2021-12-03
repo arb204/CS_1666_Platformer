@@ -10,17 +10,7 @@ Template
     * Ideas or thoughts on fix
 
 ## Bugs
-1. Can get stuck in wall
-   * Reporter: Alvyn
-   * See discord video
-   * Make portals hit box in wall instead of out of wall
-
-2. Teleporting above level
+1. Re-entry of Ceiling Portals
    * Reporter: Evan
-   * Set down portals on first level and complete as usual. On second level, place one portal and try to enter it without placing the other
-   * Do not allow teleport if portal isnt placed on current level (similar to if you dont place portal on first level and try to walk into it).
-
-3. Momentum is conserved through levels
-   * Reporter: Evan
-   * Hit level clear hit box with a decent amount of speed. This could create unwanted actions performed in the next level.
-   * Reset Player Velocity to Zero upon hitting level clear hit box.
+   * When player movement is slow enough, when walking into a portal on a wall with the second on the ceiling, player will be teleported to the ceiling, and then BACK to the wall portal. This is an unwanted behavior.
+   * Make player unable to teleport for a very small amount of time.  This cannot be too long, or a player might not be able to do a terminal velocity portal loop.

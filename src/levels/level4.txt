@@ -1,0 +1,12 @@
+nonportalblock-0-0-1-12
+portalblock-1216-64-1-3
+nonportalblock-1216-256-1-8
+nonportalblock-64-0-19-1
+portalblock-64-656-5-1
+nonportalblock-384-656-13-1
+nonportalblock-64-64-2-2
+portalblock-64-192-2-1
+nonportalblock-384-272-13-3
+portalglass-384-64-1-3
+gateplate-480-208-384-464-192-1
+start-100-500-200-500

@@ -13,6 +13,7 @@ pub struct PortalController {
     physics: PhysicsController,
     last_portal_used: i8,
     last_portal_time: SystemTime,
+    last_teleport_time: SystemTime,
     valid_portal_surfaces: Vec<RectCollider>,
     invalid_portal_surfaces: Vec<RectCollider>,
     has_teleported_blue: i32,
@@ -33,6 +34,7 @@ impl PortalController {
             physics: _physics,
             last_portal_used: 0,
             last_portal_time: SystemTime::now(),
+            last_teleport_time: SystemTime::now(),
             valid_portal_surfaces: _surfaces,
             invalid_portal_surfaces: _inval_surfaces,
             has_teleported_blue: 0,
@@ -74,136 +76,74 @@ impl PortalController {
 
     // update the physics controllers so the wand can rotate properly
     pub fn update(&mut self, newphysics: PhysicsController) {
-                                                          self.physics = newphysics;
-                                                                                    }
+        self.physics = newphysics;
+    }
 
     // teleport: teleports the player to a specific portal (UNFINISHED)
-    pub fn teleport(&mut self, player_collider: &mut RectCollider, player_physics: &mut PhysicsController, portal_blue_side: &i32, portal_orange_side: &i32) {
-        // are both portals out? (aka, should the player be allowed to teleport?)
+    pub fn teleport(&mut self, player_collider: &mut RectCollider, player_physics: &mut PhysicsController) -> bool {
         let mut can_teleport = true;
         for p in &self.portals {
             if !p.is_open() { can_teleport = false; }
         }
-
-        
         if can_teleport {
-            // used for converving momentum
-            let mut speed = player_physics.speed();
-            let mut fall_speed = player_physics.fall_speed();
-            if player_collider.is_touching(&self.portal_colliders[0]) && self.has_teleported_blue == 0 {
-                // dissalow player to jump while coming out of a portal
-                player_physics.set_jumps_used(1);
-                // portal exited is on the left wall
-                if *portal_orange_side == 0 {
-                    player_physics.set_x(self.portal_colliders[1].x() + 30.0);
-                    player_physics.set_y(self.portal_colliders[1].y());
-
-                    // conserve momentum through portal
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the right wall
-                else if *portal_orange_side == 1 {
-                    player_physics.set_x(self.portal_colliders[1].x() - 60.0);
-                    player_physics.set_y(self.portal_colliders[1].y());
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the cieling
-                else if *portal_orange_side == 2 {
-                    player_physics.set_x(self.portal_colliders[1].x());
-                    player_physics.set_y(self.portal_colliders[1].y() + 30.0);
-
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
+            for i in 0..self.portals.len() {
+                // we can only use each portal once every 100ms
+                if self.portals[i].last_used()+Duration::from_millis(500) < SystemTime::now() && player_collider.is_touching(&self.portals[i].collider()) {
+                    let in_portal = i;
+                    let out_portal = (i+1)%self.portals.len();
+                    let in_dir = self.portals[in_portal].rotation+180.0;
+                    let out_dir = (self.portals[out_portal].rotation+360.0) % 360.0;
+                    let change_direction = (out_dir - in_dir + 360.0) % 360.0;
+                    // exiting on a left wall
+                    if out_dir == 0.0 {
+                        player_physics.set_x(self.portals[out_portal].x()+30.0);
+                        player_physics.set_y(self.portals[out_portal].y()+5.0);
                     }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
-                }
-                // portal exited is on the floor
-                else if *portal_orange_side == 3 {
-                    player_physics.set_x(self.portal_colliders[1].x());
-                    player_physics.set_y(self.portal_colliders[1].y() - 30.0);
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
+                    // exiting on a right wall
+                    else if out_dir == 180.0 {
+                        player_physics.set_x(self.portals[out_portal].x()-60.0);
+                        player_physics.set_y(self.portals[out_portal].y()+5.0);
                     }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
-                }
-                self.has_teleported_orange = 1;
-            }
-            if player_collider.is_touching(&self.portal_colliders[1]) && self.has_teleported_orange == 0 {
-                // dissalow player to jump while coming out of a portal
-                player_physics.set_jumps_used(1);
-                // portal exited is on the left wall
-                if *portal_blue_side == 0 {
-                    player_physics.set_x(self.portal_colliders[0].x() + 30.0);
-                    player_physics.set_y(self.portal_colliders[0].y());
-
-                    // conserve momentum through portal
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the right wall
-                else if *portal_blue_side == 1 {
-                    player_physics.set_x(self.portal_colliders[0].x() - 60.0);
-                    player_physics.set_y(self.portal_colliders[0].y());
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    player_physics.set_speed(fall_speed + speed);
-                    player_physics.set_fall_speed(0.0);
-                }
-                // portal exited is on the cieling
-                else if *portal_blue_side == 2 {
-                    player_physics.set_x(self.portal_colliders[0].x());
-                    player_physics.set_y(self.portal_colliders[0].y() + 30.0);
-
-                    if speed < 0.0 {speed *= -1.0;}
-                    if fall_speed < 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
+                    // exiting on the ceiling
+                    else if out_dir == 90.0 {
+                        player_physics.set_x(self.portals[out_portal].x()+5.0);
+                        player_physics.set_y(self.portals[out_portal].y()+60.0);
                     }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
-                }
-                // portal exited is on the floor
-                else if *portal_blue_side == 3 {
-                    player_physics.set_x(self.portal_colliders[0].x());
-                    player_physics.set_y(self.portal_colliders[0].y() - 30.0);
-
-                    if speed > 0.0 {speed *= -1.0;}
-                    if fall_speed > 0.0 {fall_speed *= -1.0}
-                    if fall_speed == 0.0 {
-                        player_physics.set_fall_speed(speed);
+                    // exiting on the floor
+                    else {
+                        player_physics.set_x(self.portals[out_portal].x()+5.0);
+                        player_physics.set_y(self.portals[out_portal].y()-90.0);
                     }
-                    else {player_physics.set_fall_speed(fall_speed);}
-
-                    player_physics.set_speed(0.0);
+                    // conserve momentum
+                    if change_direction == 90.0 || change_direction == 270.0 {
+                        let old_speed = player_physics.speed();
+                        if out_dir == 0.0 {
+                            player_physics.set_speed(player_physics.fall_speed());
+                            player_physics.set_fall_speed(-old_speed);
+                        } else if out_dir == 90.0 {
+                            player_physics.set_speed(-player_physics.fall_speed());
+                            player_physics.set_fall_speed(old_speed);
+                        } else if out_dir == 180.0 {
+                            player_physics.set_speed(-player_physics.fall_speed());
+                            player_physics.set_fall_speed(-old_speed);
+                        } else if out_dir == 270.0 {
+                            player_physics.set_speed(player_physics.fall_speed());
+                            player_physics.set_fall_speed(old_speed);
+                        }
+                    } else if change_direction == 180.0 {
+                        if out_dir == 0.0 || out_dir == 180.0 {
+                            player_physics.set_speed(-player_physics.speed());
+                        } else {
+                            player_physics.set_fall_speed(-player_physics.fall_speed());
+                        }
+                    }
+                    self.last_teleport_time = SystemTime::now();
+                    &self.portals[out_portal].reset_last_used();
+                    return true;
                 }
-                self.has_teleported_blue = 1;
-            }
-            // makes sure player doesn't rapidly teleport back and forth or get stuck in a wall
-            if !player_collider.is_touching(&self.portal_colliders[0]) && !player_collider.is_touching(&self.portal_colliders[1]) {
-                self.has_teleported_orange = 0;
-                self.has_teleported_blue = 0;
             }
         }
+        return false;
     }
 
     //next_rotation: returns a float indicating the angle of the next frame
@@ -219,7 +159,7 @@ impl PortalController {
     }
 
     // open_portal: figures out where a portal should go and opens it there
-    pub fn open_portal(&mut self, index: usize, portal_blue_side: &mut i32, portal_orange_side: &mut i32) -> i32 {
+    pub fn open_portal(&mut self, index: usize) -> i32 {
         // we can only open a portal every 100ms
         if self.should_rotate && self.last_portal_time+Duration::from_millis(100) < SystemTime::now() {
             // fire two raycasts: one to determine the point where we create the portal and one to determine the angle
@@ -228,61 +168,48 @@ impl PortalController {
             if portal_point.is_some() && rotation_point.is_some() {
                 let pp = portal_point.unwrap();
                 let rp = rotation_point.unwrap();
-                if ((pp.0 - self.portals[1-index].x).powf(2.0) + (pp.1 - self.portals[1-index].y).powf(2.0)).powf(0.5) < 90.0 {
+                //portals can't overlap
+                if ((pp.0 - (self.portals[1-index].x()+30.0)).powf(2.0) + (pp.1 - (self.portals[1-index].y()+50.0)).powf(2.0)).powf(0.5) < 130.0 {
                     self.last_portal_used = index as i8;
                     self.last_portal_time = SystemTime::now();
                     return 0;
                 }
-                // on the left or right wall
-                let rot = if rp.0 == pp.0 {
-                    // left wall
-                    if self.wand_rotation >= 90.0 && self.wand_rotation <= 270.0 {
-                        if index == 0 { *portal_blue_side = 0; }
-                        if index == 1 { *portal_orange_side = 0; }
-                    }
-                    // right wall
-                    if self.wand_rotation >= -90.0 && self.wand_rotation < 90.0 {
-                        if index == 0 { *portal_blue_side = 1; }
-                        if index == 1 { *portal_orange_side = 1; }
-                    }
-                    0.0
-                }
-                // on the floor or ceiling
-                else if rp.1 > pp.1-1.0 || rp.1 < pp.1+1.0 {
-                    // cieling
-                    if (self.wand_rotation >= 180.0 && self.wand_rotation < 270.0) || (self.wand_rotation > -90.0 && self.wand_rotation <= 0.0) {
-                        if index == 0 { *portal_blue_side = 2; }
-                        if index == 1 { *portal_orange_side = 2; }
-                    }
-                    // floor
+                //how should the portal be rotated?
+                let rot = if pp.1 == rp.1 {
+                    //floor
                     if self.wand_rotation > 0.0 && self.wand_rotation < 180.0 {
-                        if index == 0 { *portal_blue_side = 3; }
-                        if index == 1 { *portal_orange_side = 3; }
+                        -90.0
                     }
-                    90.0
-                }
-                else { (((rp.1-pp.1)/(rp.0-pp.0)) as f32).atan()*57.29+90.0 };
+                    //ceiling
+                    else {
+                        90.0
+                    }
+                } else if pp.0 == rp.0 {
+                    //left wall
+                    if self.wand_rotation > 90.0 && self.wand_rotation < 270.0 {
+                        0.0
+                    }
+                    //right wall
+                    else {
+                        180.0
+                    }
+                } else {
+                    //slope
+                    if self.wand_rotation > 90.0 && self.wand_rotation < 270.0 {
+                        (((rp.1-pp.1)/(rp.0-pp.0)) as f32).atan()*57.29+90.0
+                    }
+                    else {
+                        180.0+(((rp.1-pp.1)/(rp.0-pp.0)) as f32).atan()*57.29+90.0
+                    }
+                };
                 // we hit a surface, but is it valid?
                 for i in &self.invalid_portal_surfaces {
-                    if i.is_touching(&RectCollider::new(pp.0 as f32, pp.1 as f32, 5.0, 5.0)) {
+                    if i.is_touching(&RectCollider::new(pp.0 as f32-2.5, pp.1 as f32-2.5, 5.0, 5.0)) {
                         return -1;
                     }
                 }
+                // open the portal
                 self.portals[index].open(pp.0 - 30.0, pp.1 - 50.0, rot);
-
-                // how should we orientate the rect collider?
-                if rot == 0.0 {
-                    self.portal_colliders[index].set_x(pp.0 - 25.0);
-                    self.portal_colliders[index].set_y(pp.1 - 45.0);
-                    self.portal_colliders[index].set_width(50.0);
-                    self.portal_colliders[index].set_height(90.0);
-                }
-                else if rot == 90.0 {
-                    self.portal_colliders[index].set_x(pp.0 - 45.0);
-                    self.portal_colliders[index].set_y(pp.1 - 25.0);
-                    self.portal_colliders[index].set_width(90.0);
-                    self.portal_colliders[index].set_height(50.0);
-                }
             }
             self.last_portal_used = index as i8;
             self.last_portal_time = SystemTime::now();
@@ -306,7 +233,9 @@ pub struct Portal {
     color_num: i32,
     x: f32,
     y: f32,
-    rotation: f32
+    rotation: f32,
+    collider: RectCollider,
+    last_used: SystemTime
 }
 
 impl Portal {
@@ -317,7 +246,9 @@ impl Portal {
             color_num: _color_num,
             x: -100.0,
             y: -100.0,
-            rotation: 0.0
+            rotation: 0.0,
+            collider: RectCollider::new(-100.0, -100.0, 50.0, 90.0),
+            last_used: SystemTime::now()
         }
     }
 
@@ -325,6 +256,10 @@ impl Portal {
     pub fn x(&self) -> f32{ self.x }
     pub fn y(&self) -> f32{ self.y }
     pub fn rotation(&self) -> f32{ self.rotation }
+    pub fn collider(&self) -> RectCollider { self.collider }
+    pub fn last_used(&self) -> SystemTime { self.last_used }
+
+    pub fn reset_last_used(&mut self) { self.last_used = SystemTime::now(); }
 
     /*pub fn set_x(&mut self, _x: f32) { self.x = _x; }
     pub fn set_y(&mut self, _y: f32) { self.y = _y; }
@@ -339,6 +274,10 @@ impl Portal {
         self.x = new_x;
         self.y = new_y;
         self.rotation = new_rot;
+        self.collider.set_x(new_x+if new_rot == 0.0 || new_rot == 180.0 {10.0} else {-5.0});
+        self.collider.set_y(new_y+if new_rot == 0.0 || new_rot == 180.0 {15.0} else {45.0});
+        self.collider.set_width(if new_rot == 0.0 || new_rot == 180.0 {40.0} else {70.0});
+        self.collider.set_height(if new_rot == 0.0 || new_rot == 180.0 {70.0} else {40.0});
     }
 
     // close: closes a portal by moving it offscreen
@@ -373,13 +312,36 @@ impl Raycast {
         let mut curr_x = self.start_x;
         let mut curr_y = self.start_y;
         let mut has_hit = false;
+        let allowed_offset = 5.0;
         while !has_hit && curr_x > 0.0 && curr_x < 1220.0 && curr_y > -30.0 && curr_y < 660.0 {
             curr_x += self.rotation.cos();
             curr_y += self.rotation.sin();
             for c in &self.colliders {
-                if c.contains_point(curr_x, curr_y) {
+                if c.contains_point(curr_x, curr_y) && !has_hit {
                     has_hit = true;
+                    let mut pos_reset = false;
+                    //traveling left, make sure raycast hits the surface and not inside it
+                    if !pos_reset && curr_x < c.x()+c.width() && curr_x > c.x()+c.width()-allowed_offset {
+                        curr_x = c.x()+c.width();
+                        pos_reset = true;
+                    }
+                    //traveling right, make sure raycast hits the surface and not inside it
+                    if !pos_reset && curr_x > c.x() && curr_x < c.x()+allowed_offset {
+                        curr_x = c.x();
+                        pos_reset = true;
+                    }
+                    //traveling up, make sure raycast hits the surface and not inside it
+                    if !pos_reset && curr_y < c.y()+c.height() && curr_y > c.y()+c.height()-allowed_offset {
+                        curr_y = c.y()+c.height();
+                        pos_reset = true;
+                    }
+                    //traveling down, make sure raycast hits the surface and not inside it
+                    if !pos_reset && curr_y > c.y() && curr_y < c.y()+allowed_offset {
+                        curr_y = c.y();
+                        pos_reset = true;
+                    }
                 }
+                if has_hit { break; }
             }
         }
         if has_hit {

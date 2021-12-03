@@ -1,8 +1,9 @@
 portalblock-0-0-1-12
-nonportalblock-1216-0-1-12
+portalblock-1216-0-1-12
 nonportalblock-0-0-20-1
-portalblock-640-320-9-1
+nonportalblock-640-320-9-1
 nonportalblock-64-192-4-2
 nonportalblock-64-640-3-2
 nonportalblock-960-656-4-2
-start-75-100
+portalglass-512-64-1-12
+start-75-100-150-500

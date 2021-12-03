@@ -1,16 +1,19 @@
+use sdl2::rect::Rect;
 use sdl2::render::Texture;
 
 use crate::animation_controller::AnimController;
 use crate::physics_controller::PhysicsController;
 use crate::portal_controller::PortalController;
 use crate::rect_collider::RectCollider;
+use crate::plate_controller::PlateController;
 
 pub struct Player {
     pub physics: PhysicsController,
     pub collider: RectCollider,
     pub anim: AnimController,
     pub portal: PortalController,
-    dead: bool
+    dead: bool,
+    pub flip_horizontal: bool,
 }
 
 impl Player {
@@ -22,14 +25,15 @@ impl Player {
             collider: _collider,
             anim: _anim,
             portal: _portal,
-            dead: false
+            dead: false,
+            flip_horizontal: false,
         }
     }
     pub fn is_dead(&self) -> bool { self.dead }
 
     // update: handle all the updates we need
-    pub fn update(&mut self) {
-        self.physics.update();
+    pub fn update(&mut self, platecon: PlateController) {
+        self.physics.update(platecon);
         self.collider.update(&self.physics.clone());
         self.anim.update(self.physics.clone());
         self.portal.update(self.physics.clone());

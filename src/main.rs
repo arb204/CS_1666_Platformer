@@ -19,6 +19,7 @@ mod hint_system;
 mod object_controller;
 mod portal_traversible;
 mod levels;
+mod plate_controller;
 
 fn main() {
 	let (sdl_cxt, wincan) = setup_sdl_and_window();
@@ -36,7 +37,7 @@ fn perform_start_logic(wincan: WindowCanvas, event_pump: EventPump, mouse: Mouse
 			mode = networking::NetworkingMode::Receive;
 			menu::show_menu(wincan, event_pump, mouse, mode);
 		} else if &args[1] == "credits" {
-			credits::show_credits(wincan);
+			credits::show_credits(wincan, event_pump);
 		}
 	} else {
 		menu::show_menu(wincan, event_pump, mouse, mode);
