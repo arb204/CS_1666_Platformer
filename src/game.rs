@@ -57,6 +57,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let block_texture = texture_creator.load_texture("assets/in_game/block/block.png").unwrap();
     let pressure_plate = texture_creator.load_texture("assets/in_game/level/pressure_plate/pressure_plate_spritesheet.png").unwrap();
     let gate = texture_creator.load_texture("assets/in_game/level/gate/gate.png").unwrap();
+    let loading_screen = texture_creator.load_texture("assets/out_of_game/loading_screen/stone_brick_loading_sprite_sheet_192x256.png").unwrap();
     /*
     Renderer setup complete.
      */
@@ -102,7 +103,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     //level data
     let mut current_level = 0; // what level are we on?
     let final_level = 4; // what level is the last one?
-
 
     let mut level = levels::parse_level("level0.txt");
     let mut level_has_gate = false;
@@ -292,7 +292,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 let player_data = networking::unpack_player_data(&mut buf)
                     .unwrap();
 
-                let portal_pos: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut socket, &mut buf);
+                let portal_pos: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut buf);
 
                 let block_data: (i32, i32, bool) =  networking::unpack_block_data(&mut buf);
                 player2_data = Some((player_data, portal_pos, block_data));
