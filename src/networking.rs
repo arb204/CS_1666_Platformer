@@ -38,6 +38,10 @@ impl Network {
         }
     }
 
+    pub fn get_network_mode(&self) -> Mode {
+        self.mode
+    }
+
     pub fn get_packet_buffer(&self) -> [u8; PACKET_SIZE] {
         let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
         let (_amt, _src) =  self.socket.recv_from(& mut buf).unwrap();
@@ -57,8 +61,8 @@ impl Network {
         let anim = player.anim.next_anim();
         let ax = anim.x().to_le_bytes();
         let ay = match self.mode {
-            Mode::MultiplayerPlayer1 => (2*anim.height()) as i32 + anim.y(),
-            Mode::MultiplayerPlayer2 => anim.y(),
+            Mode::MultiplayerPlayer1 => anim.y(),
+            Mode::MultiplayerPlayer2 => (2*anim.height()) as i32 + anim.y(),
         }.to_le_bytes(); // to get to green characters
         let aw = anim.width().to_le_bytes();
         let ah = anim.height().to_le_bytes();
