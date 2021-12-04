@@ -341,7 +341,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             }
         }
 
-        render_player(&p1sprite, &mut wincan, &mut player)?;
+        render_player(&p1sprite, &mut wincan, &mut player, &network)?;
         match remote_player {
             Some(_) => {
                 let player_data = remote_player.unwrap().0;
@@ -402,10 +402,31 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     Ok(())
 }
 
-fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player) -> Result<(), String>{
+fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, network: &Option<Network>) -> Result<(), String>{
     let pos_rect = player1.physics.position_rect();
     let pos_rect = Rect::new(pos_rect.0, pos_rect.1, pos_rect.2, pos_rect.3);
-    wincan.copy_ex(&texture, player1.anim.next_anim(), pos_rect, 0.0, None, player1.flip_horizontal, false)
+    let anim_rect;
+    if network.is_some() {
+        let network = network.as_ref().unwrap();
+        match network.get_network_mode() {
+            networking::Mode::MultiplayerPlayer1 => {
+                wincan.copy_ex(&texture, player1.anim.next_anim(), pos_rect, 0.0, None, player1.flip_horizontal, false)
+
+            },
+            networking::Mode::MultiplayerPlayer2 => {
+                anim_rect =  Rect::new(
+                    player1.anim.next_anim().x(),
+                    (player1.anim.next_anim().height() * 2) as i32 + player1.anim.next_anim().y() as i32,
+                    player1.anim.next_anim().width(),
+                    player1.anim.next_anim().height(),
+                );
+                wincan.copy_ex(&texture, anim_rect, pos_rect, 0.0, None, player1.flip_horizontal, false)
+            }
+        }
+    } else {
+        wincan.copy_ex(&texture, player1.anim.next_anim(), pos_rect, 0.0, None, player1.flip_horizontal, false)
+
+    }
 }
 
 fn render_remote_player(wincan: &mut WindowCanvas, player_sprite: &Texture, player_pos: (f32, f32), flip: bool, anim_rect: Rect) -> Result<(), String> {
