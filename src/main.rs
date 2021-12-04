@@ -48,7 +48,7 @@ fn perform_start_logic(wincan: WindowCanvas, event_pump: EventPump, mouse: Mouse
 		menu::show_menu(wincan, event_pump, mouse, network);
 	} else {
 		println!("Invalid Arguments. Your options are:\n\
-		singleplayer (by default)\nmultiplayer 1\nmultiplayer 2\nor credits.");
+		singleplayer (default)\nmultiplayer 1\nmultiplayer 2\nor credits.");
 		process::exit(0);
 	}
 }
