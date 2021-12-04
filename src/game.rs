@@ -341,17 +341,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             }
         }
 
-        if network.is_some() {
-            let network = network.as_ref().unwrap();
-            match network.get_network_mode() {
-                networking::Mode::MultiplayerPlayer1 => {},
-                networking::Mode::MultiplayerPlayer2 => {
-                    let anim = player.anim.next_anim();
-                    player.anim.next_anim().set_y(2 * anim.height() as i32 + anim.y())
-                }
-            }
-        }
-
         render_player(&p1sprite, &mut wincan, &mut player, &network)?;
         match remote_player {
             Some(_) => {
