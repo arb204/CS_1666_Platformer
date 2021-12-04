@@ -5,9 +5,9 @@ use sdl2::mouse::MouseUtil;
 use sdl2::render::WindowCanvas;
 
 use crate::game;
-use crate::networking::NetworkingMode;
+use crate::networking::Network;
 
-pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network_mode: NetworkingMode)
+pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network: Option<Network>)
 {
     let texture_creator = wincan.texture_creator();
 
@@ -22,10 +22,6 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
                 Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'menu_loop,
                 Event::KeyDown{keycode: Some(k), ..} => {
                     match k {
-                        // Keycode::M => {
-                        //     network_mode = NetworkingMode::Receive;
-                        //     break 'menuloop
-                        // }
                         _ => break 'menu_loop,
                     }
                 }
@@ -33,9 +29,5 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             }
         }
     }
-    // match &network_mode {
-    //     NetworkingMode::Send => print!("SENDING"),
-    //     NetworkingMode::Receive => print!("RECEIVING"),
-    // }
-    game::run(wincan, event_pump, mouse, network_mode).ok();
+    game::run(wincan, event_pump, mouse, network).ok();
 }

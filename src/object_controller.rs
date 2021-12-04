@@ -4,7 +4,7 @@ use crate::player::Player;
 pub struct ObjectController {
     collider: RectCollider,
     obstacles: Vec<RectCollider>,
-    carried: bool,
+    pub carried: bool,
     in_air: bool,
     new_level: bool,
     fall_speed: f32,
@@ -31,7 +31,7 @@ impl ObjectController {
 
     pub fn x(&self) -> i32 { self.collider.x() as i32}
     pub fn y(&self) -> i32 { self.collider.y() as i32}
-    pub fn carried(&self) -> bool { self.carried }
+    // pub fn carried(&self) -> bool { self.carried }
     pub fn in_air(&self) -> bool { self.in_air }
     pub fn new_level(&self) -> bool { self.new_level }
     pub fn fall_speed(&self) -> f32 { self.fall_speed }
