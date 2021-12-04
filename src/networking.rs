@@ -1,42 +1,107 @@
-use std::net::UdpSocket;
+use std::net::{SocketAddr, UdpSocket};
+use std::str::FromStr;
 use crate::player::Player;
 use crate::object_controller::ObjectController;
 
-// try getting from nslookup
-pub const SEND_ADDR: &str = "127.0.0.1:34255";
-pub const REC_ADDR: &str = "127.0.0.1:34254";
 const PACKET_SIZE: usize = 64;
 const DEBUG: bool = false;
 
-#[derive(Clone, Copy)]
-pub(crate) enum NetworkingMode {
-    Send,
-    Receive,
+#[derive(Copy, Clone)]
+pub enum Mode {
+    MultiplayerPlayer1,
+    MultiplayerPlayer2,
 }
 
-pub(crate) fn get_sending_socket() -> UdpSocket {
-    get_socket(SEND_ADDR)
+pub struct Network {
+    socket: UdpSocket,
+    pub mode: Mode,
 }
 
-pub(crate) fn get_receiving_socket() -> UdpSocket {
-    get_socket(REC_ADDR)
+impl Network {
+    pub fn new(mode: Mode) -> Network {
+        let new_network = |local, remote| {
+            let socket = UdpSocket::bind(local).expect("couldn't bind to local");
+            socket.connect(remote).expect("couldn't connect to remote");
+            Network { socket, mode }
+        };
+        match mode {
+            Mode::MultiplayerPlayer1 => {
+                let local = SocketAddr::from_str("127.0.0.1:34254").unwrap();
+                let remote = SocketAddr::from_str("127.0.0.1:34255").unwrap();
+                new_network(local, remote)
+            }
+            Mode::MultiplayerPlayer2 => {
+                let local = SocketAddr::from_str("127.0.0.1:34255").unwrap();
+                let remote = SocketAddr::from_str("127.0.0.1:34254").unwrap();
+                new_network(local, remote)
+            }
+        }
+    }
+
+    pub fn get_packet_buffer(&self) -> [u8; PACKET_SIZE] {
+        let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
+        let (_amt, _src) =  self.socket.recv_from(& mut buf).unwrap();
+        return buf;
+    }
+
+    pub fn pack_and_send_data(
+        &self, player: &mut Player,
+        block: &ObjectController,
+    ) -> std::io::Result<usize> {
+
+        //Player Information
+        let player_xpos = player.physics.x().to_le_bytes();
+        let player_ypos = player.physics.y().to_le_bytes();
+        let flip = player.flip_horizontal as u32;
+        let flip = flip.to_le_bytes();
+        let anim = player.anim.next_anim();
+        let ax = anim.x().to_le_bytes();
+        let ay = match self.mode {
+            Mode::MultiplayerPlayer1 => (2*anim.height()) as i32 + anim.y(),
+            Mode::MultiplayerPlayer2 => anim.y(),
+        }.to_le_bytes(); // to get to green characters
+        let aw = anim.width().to_le_bytes();
+        let ah = anim.height().to_le_bytes();
+
+        //Portal Information
+        let portal_1_x: [u8; 4] = player.portal.portals[0].x().to_le_bytes();
+        let portal_1_y: [u8; 4] = player.portal.portals[0].y().to_le_bytes();
+        let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
+        let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
+        let portal_1_rotation:[u8; 4] = player.portal.portals[0].rotation().to_le_bytes();
+        let portal_2_rotation:[u8; 4] = player.portal.portals[1].rotation().to_le_bytes();
+
+        //Block Information
+        let block_x: [u8; 4] = block.x().to_le_bytes();
+        let block_y: [u8; 4] = block.y().to_le_bytes();
+        let carried = block.carried as u32;
+        let block_carried: [u8; 4] = carried.to_le_bytes();
+
+        let buf = [
+            player_xpos,
+            player_ypos,
+            flip,
+            portal_1_x,
+            portal_1_y,
+            portal_2_x,
+            portal_2_y,
+            ax,
+            ay,
+            aw,
+            ah,
+            portal_1_rotation,
+            portal_2_rotation,
+            block_x,
+            block_y,
+            block_carried,
+        ].concat();
+        if DEBUG { println!("{:?}", &buf); }
+        return self.socket.send(&buf);
+    }
 }
 
-fn get_socket(address: &str) -> UdpSocket {
-    let socket = UdpSocket::bind(address).expect("couldn't bind to address");
-    socket
-}
-
-pub(crate) fn get_packet_buffer(socket: &mut UdpSocket) -> [u8; PACKET_SIZE] {
-    let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
-    let (_amt, _src) =  socket.recv_from(& mut buf).unwrap();
-    return buf;
-}
-
-
-// refactor to make safe -- return result
-pub(crate) fn unpack_player_data(buf: &mut [u8; PACKET_SIZE])
-                                 -> Result<(f32, f32, bool, i32, i32, u32, u32), String> {
+pub fn unpack_player_data(buf: &mut [u8; PACKET_SIZE])
+                          -> Result<(f32, f32, bool, i32, i32, u32, u32), String> {
     let mut xpos: [u8; 4] = [0; 4];
     for i in 0..4 {
         xpos[i] = buf[i];
@@ -92,7 +157,7 @@ pub(crate) fn unpack_player_data(buf: &mut [u8; PACKET_SIZE])
 }
 
 // refactor to make safe -- return result
-pub(crate) fn unpack_portal_data(buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32, f32, f32) {
+pub fn unpack_portal_data(buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32, f32, f32) {
     let mut xpos_1: [u8; 4] = [0; 4];
     for i in 12..16 {
         xpos_1[i-12] = buf[i];
@@ -158,53 +223,4 @@ pub(crate) fn unpack_block_data(buf: &mut [u8; PACKET_SIZE]) -> (i32, i32, bool)
     };
 
     (block_x, block_y, carried)
-}
-
-pub(crate) fn pack_and_send_data(player: &mut Player, block: &mut ObjectController, socket: &UdpSocket) -> std::io::Result<usize> {
-
-    //Player Information
-    let player_xpos = player.physics.x().to_le_bytes(); 
-    let player_ypos = player.physics.y().to_le_bytes();
-    let flip: u32 = if player.flip_horizontal { 1 } else { 0 };
-    let flip = flip.to_le_bytes();
-    let anim = player.anim.next_anim();
-    let ax = anim.x().to_le_bytes();
-    let ay = ((2*anim.height()) as i32 + anim.y()).to_le_bytes(); // to get to green characters
-    let aw = anim.width().to_le_bytes();
-    let ah = anim.height().to_le_bytes();
-
-    //Portal Information
-    let portal_1_x: [u8; 4] = player.portal.portals[0].x().to_le_bytes();
-    let portal_1_y: [u8; 4] = player.portal.portals[0].y().to_le_bytes();
-    let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
-    let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
-    let portal_1_rotation:[u8; 4] = player.portal.portals[0].rotation().to_le_bytes();
-    let portal_2_rotation:[u8; 4] = player.portal.portals[1].rotation().to_le_bytes();
-
-    //Block Information
-    let block_x: [u8; 4] = block.x().to_le_bytes();
-    let block_y: [u8; 4] = block.y().to_le_bytes();
-    let carried = block.carried() as i32;
-    let block_carried: [u8; 4] = carried.to_le_bytes();
-
-    let buf = [
-        player_xpos,
-        player_ypos,
-        flip,
-        portal_1_x,
-        portal_1_y,
-        portal_2_x,
-        portal_2_y,
-        ax,
-        ay,
-        aw,
-        ah,
-        portal_1_rotation,
-        portal_2_rotation,
-        block_x,
-        block_y,
-        block_carried,
-    ].concat();
-    if DEBUG { println!("{:?}", &buf); }
-    return socket.send(&buf);
 }

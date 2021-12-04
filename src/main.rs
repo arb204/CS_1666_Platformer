@@ -1,6 +1,6 @@
 extern crate sdl2;
 
-use std::env;
+use std::{env, process};
 
 use sdl2::{EventPump, Sdl};
 use sdl2::mouse::MouseUtil;
@@ -31,16 +31,25 @@ fn main() {
 
 fn perform_start_logic(wincan: WindowCanvas, event_pump: EventPump, mouse: MouseUtil) {
 	let args: Vec<String> = env::args().collect();
-	let mut mode = networking::NetworkingMode::Send;
-	if args.len() == 2 {
-		if &args[1] == "mirror" {
-			mode = networking::NetworkingMode::Receive;
-			menu::show_menu(wincan, event_pump, mouse, mode);
-		} else if &args[1] == "credits" {
-			credits::show_credits(wincan, event_pump);
+	let mut network = None;
+	if args.len() < 2 || (args.len() == 2 && &args[1] == "singleplayer") {
+		menu::show_menu(wincan, event_pump, mouse, network);
+	} else if args.len() == 2 && &args[1] == "credits" {
+		credits::show_credits(wincan, event_pump);
+	} else if args.len() == 3 && &args[1] == "multiplayer" {
+		if &args[2] == "1" || &args[2] == "p1" {
+			network = Some(networking::Network::new(networking::Mode::MultiplayerPlayer1));
+		} else if &args[2] == "2" || &args[2] == "p2" {
+			network = Some(networking::Network::new(networking::Mode::MultiplayerPlayer2));
+		} else {
+			println!("Must use: multiplayer 1 or multiplayer 2");
+			process::exit(0);
 		}
+		menu::show_menu(wincan, event_pump, mouse, network);
 	} else {
-		menu::show_menu(wincan, event_pump, mouse, mode);
+		println!("Invalid Arguments. Your options are:\n\
+		singleplayer (default)\nmultiplayer 1\nmultiplayer 2\nor credits.");
+		process::exit(0);
 	}
 }
 
