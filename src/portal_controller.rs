@@ -50,6 +50,7 @@ impl PortalController {
     pub fn wand_y(&self) -> i32 { self.wand_y }
     pub fn potion_x(&self) -> i32 { self.potion_x }
     pub fn potion_y(&self) -> i32 { self.potion_y }
+    pub fn rotation(&self) -> f32 { self.wand_rotation }
     pub fn last_portal(&self) -> i8 { self.last_portal_used }
 
     pub fn add_valid_surface(&mut self, new_collider: RectCollider) {
