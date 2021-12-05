@@ -203,12 +203,18 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             if let Err(e) = network.pack_and_send_data(&mut player, &block, network_option) {
                 eprintln!("{}", e);
             }
-            let mut buf = network.get_packet_buffer();
-            let player_data = networking::unpack_player_data(&mut buf).unwrap();
-            let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
-            let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
-            let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-            remote_player = Some((player_data, portal_data, block_data, wand_data));
+            match network.get_packet_buffer() {
+                Ok(mut buf) => {
+                    let player_data = networking::unpack_player_data(&mut buf).unwrap();
+                    let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+                    let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
+                    let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
+                    remote_player = Some((player_data, portal_data, block_data, wand_data));
+                }
+                Err(e) => {
+                    eprintln!("{}", e);
+                }
+            }
         }
         /*
         End Networking
@@ -223,7 +229,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
          */
 
         let mut remote_collider = RectCollider::new(-300.0, -300.0, 69.0, 98.0);
-        if network.is_some() {
+        if remote_player.is_some() {
             let remote_player = remote_player.unwrap().0;
             remote_collider = RectCollider::new(remote_player.0, remote_player.1, 69.0, 98.0);
             if level_cleared == false && player.collider.is_touching(&door_collider) && remote_collider.is_touching(&door_collider) {
@@ -310,7 +316,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
 
         // create the portals
-        if network.is_some() {
+        if remote_player.is_some() {
             let network = network.as_ref().unwrap();
             match network.get_network_mode() {
                 networking::Mode::MultiplayerPlayer1 => {
