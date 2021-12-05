@@ -42,10 +42,24 @@ impl Network {
         self.mode
     }
 
-    pub fn get_packet_buffer(&self) -> [u8; PACKET_SIZE] {
+    pub fn get_packet_buffer(&self) -> Result<[u8; PACKET_SIZE], String> {
         let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
-        let (_amt, _src) =  self.socket.recv_from(& mut buf).unwrap();
-        return buf;
+        let receive_result = self.socket.recv_from(&mut buf);
+        return match receive_result {
+            Ok(_) => {
+                let (amt, src) = receive_result.unwrap();
+                if amt != PACKET_SIZE {
+                    eprintln!("Expected {} bytes, Received {} bytes", PACKET_SIZE, amt);
+                }
+                let peer_addr = self.socket.peer_addr().expect("not connected to remote");
+                assert_eq!(src, peer_addr, "Expected to receive data from {}, Instead received from {}",
+                           peer_addr, src);
+                Ok(buf)
+            }
+            Err(_) => {
+                Err(String::from("Didn't receive data"))
+            }
+        }
     }
 
     pub fn pack_and_send_data(
