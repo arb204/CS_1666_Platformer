@@ -11,7 +11,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 
-use crate::{levels, networking};
+use crate::{levels, networking, rect_collider};
 use crate::animation_controller::Anim;
 use crate::animation_controller::AnimController;
 use crate::animation_controller::Condition;
@@ -188,11 +188,54 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         // Teleport the player
         player.portal.teleport(&mut player.collider, &mut player.physics);
 
-        // check to see if player has reached the end of the level
-        if level_cleared == false && player.collider.is_touching(&door_collider) {
-            level_cleared = true;
-            player.stop();
+         /*
+        Local Game Input Processed
+         */
+        // *************************************************************************
+        /*
+        Begin Networking
+         */
+        let mut remote_player = None;
+        if network.is_some() {
+            let network = network.as_ref().unwrap();
+            if let Err(e) = network.pack_and_send_data(&mut player, &block) {
+                eprintln!("{}", e);
+            }
+            let mut buf = network.get_packet_buffer();
+            let player_data = networking::unpack_player_data(&mut buf).unwrap();
+            let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+            let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
+            remote_player = Some((player_data, portal_data, block_data));
         }
+        /*
+        End Networking
+         */
+        /*
+        End game state update.
+         */
+
+        // **********************************************************************
+        /*
+        Begin rendering current frame.
+         */
+
+        let mut remote_collider = RectCollider::new(-300.0, -300.0, 69.0, 98.0);
+        if network.is_some() {
+            let remote_player = remote_player.unwrap().0;
+            remote_collider = RectCollider::new(remote_player.0, remote_player.1, 69.0, 98.0);
+            if level_cleared == false && player.collider.is_touching(&door_collider) && remote_collider.is_touching(&door_collider) {
+                level_cleared = true;
+                player.stop();
+            }
+
+        } else {
+            // check to see if player has reached the end of the level
+            if level_cleared == false && player.collider.is_touching(&door_collider) {
+                level_cleared = true;
+                player.stop();
+            }
+        }
+
         if level_cleared {
             //this is just until we get the level changing logic completed
             if current_level == final_level { break 'game_loop; }
@@ -262,36 +305,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 player.flip_horizontal
             };
 
-        /*
-        Local Game Input Processed
-         */
-        // *************************************************************************
-        /*
-        Begin Networking
-         */
-        let mut remote_player = None;
-        if network.is_some() {
-            let network = network.as_ref().unwrap();
-            if let Err(e) = network.pack_and_send_data(&mut player, &block) {
-                eprintln!("{}", e);
-            }
-            let mut buf = network.get_packet_buffer();
-            let player_data = networking::unpack_player_data(&mut buf).unwrap();
-            let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
-            let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
-            remote_player = Some((player_data, portal_data, block_data));
-        }
-        /*
-        End Networking
-         */
-        /*
-        End game state update.
-         */
-
-        // **********************************************************************
-        /*
-        Begin rendering current frame.
-         */
 
         // create the portals
         if network.is_some() {
@@ -328,7 +341,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         
         wincan.copy(&castle_bg, None, None).ok();
 
-        draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider);
+        draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider, &network, &remote_collider);
         // draw_collision_boxes(&mut wincan, &player1);
         // draw the surfaces
         for obj in level.iter() {
@@ -502,15 +515,25 @@ fn draw_gate(wincan: &mut WindowCanvas, sprite: &Texture, platecon: PlateControl
 }
 
 
-fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player, door_collider: &RectCollider) {
+fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player, door_collider: &RectCollider, network: &Option<Network>, remote_collider: &RectCollider) {
     let pos = Rect::new((1280 - DOORW) as i32, (720 - 64 - DOORH) as i32, DOORW, DOORH);
     let src: Rect;
-    if player.collider.is_touching(door_collider) {
-        // get open door
-        src = Rect::new(DOORW as i32, 0, DOORW, DOORH);
+    if network.is_some() {
+        if player.collider.is_touching(door_collider) || remote_collider.is_touching(door_collider){
+            // get open door
+            src = Rect::new(DOORW as i32, 0, DOORW, DOORH);
+        } else {
+            // get closed door
+            src = Rect::new(0, 0, DOORW, DOORH);
+        }
     } else {
-        // get closed door
-        src = Rect::new(0, 0, DOORW, DOORH);
+        if player.collider.is_touching(door_collider) {
+            // get open door
+            src = Rect::new(DOORW as i32, 0, DOORW, DOORH);
+        } else {
+            // get closed door
+            src = Rect::new(0, 0, DOORW, DOORH);
+        }
     }
     wincan.copy(&door_sheet, src, pos).ok();
 }
