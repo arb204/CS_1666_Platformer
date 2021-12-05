@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::player::Player;
 use crate::object_controller::ObjectController;
 
-const PACKET_SIZE: usize = 52;
+const PACKET_SIZE: usize = 64;
 const DEBUG: bool = false;
 
 #[derive(Copy, Clone)]
@@ -89,6 +89,12 @@ impl Network {
         let carried = block.carried as u32;
         let block_carried: [u8; 4] = carried.to_le_bytes();
 
+        //Wand Information
+        let wand_x: [u8; 4] = player.portal.wand_x().to_le_bytes();
+        let wand_y: [u8; 4] = player.portal.wand_y().to_le_bytes();
+        let wand_rotation: [u8; 4] = player.portal.rotation().to_le_bytes();
+
+
         let buf = [
             player_xpos,
             player_ypos,
@@ -103,6 +109,9 @@ impl Network {
             block_x,
             block_y,
             block_carried,
+            wand_x,
+            wand_y,
+            wand_rotation,
         ].concat();
         if DEBUG { println!("{:?}", &buf); }
         return self.socket.send(&buf);
@@ -214,4 +223,27 @@ pub(crate) fn unpack_block_data(buf: &mut [u8; PACKET_SIZE]) -> (i32, i32, bool)
     };
 
     (block_x, block_y, carried)
+}
+
+pub(crate) fn unpack_wand_data(buf: &mut [u8; PACKET_SIZE]) -> (i32, i32, f32) {
+    let mut wand_x: [u8; 4] = [0; 4];
+    for i in 52..56 {
+        wand_x[i-52] = buf[i];
+    }
+
+    let mut wand_y: [u8; 4] = [0; 4];
+    for i in 56..60 {
+        wand_y[i-56] = buf[i];
+    }
+
+    let mut wand_rot: [u8; 4] = [0; 4];
+    for i in 60..64 {
+        wand_rot[i-60] = buf[i];
+    }
+
+    let wand_x = i32::from_le_bytes(wand_x);
+    let wand_y = i32::from_le_bytes(wand_y);
+    let wand_rot = f32::from_le_bytes(wand_rot);
+
+    (wand_x, wand_y, wand_rot)
 }

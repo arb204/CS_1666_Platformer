@@ -207,7 +207,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             let player_data = networking::unpack_player_data(&mut buf).unwrap();
             let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
             let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
-            remote_player = Some((player_data, portal_data, block_data));
+            let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
+            remote_player = Some((player_data, portal_data, block_data, wand_data));
         }
         /*
         End Networking
@@ -408,8 +409,25 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             render_portal(p);
         }
 
-        // wand color
-        wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+        //Wand Rendering
+        match remote_player {
+            Some(_) => {
+                let wand_data = remote_player.unwrap().3;
+                let player_data = remote_player.unwrap().0;
+                let network = network.as_ref().unwrap();
+                match network.get_network_mode() {
+                    networking::Mode::MultiplayerPlayer1 => {
+                        wincan.copy_ex(&bluewand , None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+                        wincan.copy_ex(&orangewand, None, Rect::new(player_data.0 as i32 + wand_data.0, player_data.1 as i32 + wand_data.1, 100, 20), wand_data.2 as f64, None, false, false)?;
+                    }
+                    networking::Mode::MultiplayerPlayer2 => {
+                        wincan.copy_ex(&orangewand , None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+                        wincan.copy_ex(&bluewand, None, Rect::new(player_data.0 as i32 + wand_data.0, player_data.1 as i32 + wand_data.1, 100, 20), wand_data.2 as f64, None, false, false)?;
+                    }
+                }
+            }
+            None => { wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?; }
+        }
 
         //draw a custom cursor
         wincan.copy(&cursor, None, Rect::new(event_pump.mouse_state().x() - 27, event_pump.mouse_state().y() - 38, 53, 75)).ok();
