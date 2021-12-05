@@ -19,6 +19,8 @@ pub struct Network {
 
 impl Network {
     pub fn new(mode: Mode) -> Network {
+        let address_a = SocketAddr::from_str("192.168.50.149:34254").unwrap();
+        let address_b = SocketAddr::from_str("192.168.50.84:34255").unwrap();
         let new_network = |local, remote| {
             let socket = UdpSocket::bind(local).expect("couldn't bind to local");
             socket.connect(remote).expect("couldn't connect to remote");
@@ -26,13 +28,13 @@ impl Network {
         };
         match mode {
             Mode::MultiplayerPlayer1 => {
-                let local = SocketAddr::from_str("127.0.0.1:34254").unwrap();
-                let remote = SocketAddr::from_str("127.0.0.1:34255").unwrap();
+                let local = address_a;
+                let remote = address_b;
                 new_network(local, remote)
             }
             Mode::MultiplayerPlayer2 => {
-                let local = SocketAddr::from_str("127.0.0.1:34255").unwrap();
-                let remote = SocketAddr::from_str("127.0.0.1:34254").unwrap();
+                let local = address_b;
+                let remote = address_a;
                 new_network(local, remote)
             }
         }
