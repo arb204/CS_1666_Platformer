@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::player::Player;
 use crate::object_controller::ObjectController;
 
-const PACKET_SIZE: usize = 64;
+const PACKET_SIZE: usize = 52;
 const DEBUG: bool = false;
 
 #[derive(Copy, Clone)]
@@ -68,12 +68,22 @@ impl Network {
         let ah = anim.height().to_le_bytes();
 
         //Portal Information
-        let portal_1_x: [u8; 4] = player.portal.portals[0].x().to_le_bytes();
-        let portal_1_y: [u8; 4] = player.portal.portals[0].y().to_le_bytes();
-        let portal_2_x: [u8; 4] = player.portal.portals[1].x().to_le_bytes();
-        let portal_2_y: [u8; 4] = player.portal.portals[1].y().to_le_bytes();
-        let portal_1_rotation:[u8; 4] = player.portal.portals[0].rotation().to_le_bytes();
-        let portal_2_rotation:[u8; 4] = player.portal.portals[1].rotation().to_le_bytes();
+        let portal_x: [u8; 4];
+        let portal_y: [u8; 4];
+        let portal_rotation: [u8; 4];
+
+        match self.mode {
+            Mode::MultiplayerPlayer1 => {
+                portal_x = player.portal.portals[0].x().to_le_bytes();
+                portal_y = player.portal.portals[0].y().to_le_bytes();
+                portal_rotation = player.portal.portals[0].rotation().to_le_bytes();
+            },
+            Mode::MultiplayerPlayer2 => {
+                portal_x = player.portal.portals[1].x().to_le_bytes();
+                portal_y = player.portal.portals[1].y().to_le_bytes();
+                portal_rotation = player.portal.portals[1].rotation().to_le_bytes();
+            }
+        }
 
         //Block Information
         let block_x: [u8; 4] = block.x().to_le_bytes();
@@ -85,16 +95,13 @@ impl Network {
             player_xpos,
             player_ypos,
             flip,
-            portal_1_x,
-            portal_1_y,
-            portal_2_x,
-            portal_2_y,
+            portal_x,
+            portal_y,
+            portal_rotation,
             ax,
             ay,
             aw,
             ah,
-            portal_1_rotation,
-            portal_2_rotation,
             block_x,
             block_y,
             block_carried,
@@ -121,23 +128,23 @@ pub fn unpack_player_data(buf: &mut [u8; PACKET_SIZE])
     }
 
     let mut ax :[u8; 4] = [0; 4];
-    for i in 28..32 {
-        ax[i-28] = buf[i];
+    for i in 24..28 {
+        ax[i-24] = buf[i];
     }
 
     let mut ay :[u8; 4] = [0; 4];
-    for i in 32..36 {
-        ay[i-32] = buf[i];
+    for i in 28..32 {
+        ay[i-28] = buf[i];
     }
 
     let mut aw :[u8; 4] = [0; 4];
-    for i in 36..40 {
-        aw[i-36] = buf[i];
+    for i in 32..36 {
+        aw[i-32] = buf[i];
     }
 
     let mut ah :[u8; 4] = [0; 4];
-    for i in 40..44 {
-        ah[i-40] = buf[i];
+    for i in 36..40 {
+        ah[i-36] = buf[i];
     }
 
     let x = f32::from_le_bytes(xpos);
@@ -161,61 +168,43 @@ pub fn unpack_player_data(buf: &mut [u8; PACKET_SIZE])
 }
 
 // refactor to make safe -- return result
-pub fn unpack_portal_data(buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, f32, f32, f32) {
-    let mut xpos_1: [u8; 4] = [0; 4];
+pub fn unpack_portal_data(buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32) {
+    let mut xpos: [u8; 4] = [0; 4];
     for i in 12..16 {
-        xpos_1[i-12] = buf[i];
+        xpos[i-12] = buf[i];
     }
 
-    let mut ypos_1: [u8; 4] = [0; 4];
+    let mut ypos: [u8; 4] = [0; 4];
     for i in 16..20 {
-        ypos_1[i-16] = buf[i];
+        ypos[i-16] = buf[i];
     }
 
-    let mut xpos_2: [u8; 4] = [0; 4];
+    let mut rotation: [u8; 4] = [0; 4];
     for i in 20..24 {
-        xpos_2[i-20] = buf[i];
+        rotation[i-20] = buf[i];
     }
 
-    let mut ypos_2: [u8; 4] = [0; 4];
-    for i in 24..28 {
-        ypos_2[i-24] = buf[i];
-    }
-
-    let mut rotation1: [u8; 4] = [0; 4];
-    for i in 44..48 {
-        rotation1[i-44] = buf[i];
-    }
-
-    let mut rotation2: [u8; 4] = [0; 4];
-    for i in 48..52 {
-        rotation2[i-48] = buf[i];
-    }
-
-    let x1 = f32::from_le_bytes(xpos_1);
-    let y1 = f32::from_le_bytes(ypos_1);
-    let x2 = f32::from_le_bytes(xpos_2);
-    let y2 = f32::from_le_bytes(ypos_2);
-    let rotation1 = f32::from_le_bytes(rotation1);
-    let rotation2 = f32::from_le_bytes(rotation2);
-
-    (x1,y1,x2,y2, rotation1, rotation2)
+    let x1 = f32::from_le_bytes(xpos);
+    let y1 = f32::from_le_bytes(ypos);
+    let rotation1 = f32::from_le_bytes(rotation);
+   
+    (x1,y1,rotation1)
 }
 
 pub(crate) fn unpack_block_data(buf: &mut [u8; PACKET_SIZE]) -> (i32, i32, bool){
     let mut block_x: [u8; 4] = [0; 4];
-    for i in 52..56 {
-        block_x[i-52] = buf[i];
+    for i in 40..44 {
+        block_x[i-40] = buf[i];
     }
 
     let mut block_y: [u8; 4] = [0; 4];
-    for i in 56..60 {
-        block_y[i-56] = buf[i];
+    for i in 44..48 {
+        block_y[i-44] = buf[i];
     }
 
     let mut carried: [u8; 4] = [0; 4];
-    for i in 60..64 {
-        carried[i-60] = buf[i];
+    for i in 48..52 {
+        carried[i-48] = buf[i];
     }
 
     let block_x = i32::from_le_bytes(block_x);

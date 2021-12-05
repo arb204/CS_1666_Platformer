@@ -262,13 +262,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 player.flip_horizontal
             };
 
-        // create the portals
-        if event_pump.mouse_state().left() {
-            player.portal.open_portal(0);
-        }
-        if event_pump.mouse_state().right() {
-            player.portal.open_portal(1);
-        }
         /*
         Local Game Input Processed
          */
@@ -284,7 +277,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             }
             let mut buf = network.get_packet_buffer();
             let player_data = networking::unpack_player_data(&mut buf).unwrap();
-            let portal_data: (f32, f32, f32, f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+            let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
             let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
             remote_player = Some((player_data, portal_data, block_data));
         }
@@ -299,6 +292,40 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         /*
         Begin rendering current frame.
          */
+
+        // create the portals
+        if network.is_some() {
+            let network = network.as_ref().unwrap();
+            match network.get_network_mode() {
+                networking::Mode::MultiplayerPlayer1 => {
+                    if event_pump.mouse_state().left() {
+                        player.portal.open_portal(0);
+                    }
+                    let remote_portal = remote_player.unwrap().1;
+                    if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
+                        player.portal.portals[1].open(remote_portal.0, remote_portal.1, remote_portal.2);
+                    }
+                },
+                networking::Mode::MultiplayerPlayer2 => {
+                    if event_pump.mouse_state().left() {
+                        player.portal.open_portal(1);
+                    }
+                    let remote_portal = remote_player.unwrap().1;
+                    if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
+                        player.portal.portals[0].open(remote_portal.0, remote_portal.1, remote_portal.2);
+                    }
+                }
+            }
+        } else {
+            if event_pump.mouse_state().left() {
+                player.portal.open_portal(0);
+            }
+            if event_pump.mouse_state().right() {
+                player.portal.open_portal(1);
+            }
+        }
+       
+        
         wincan.copy(&castle_bg, None, None).ok();
 
         draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider);
@@ -364,19 +391,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         // render portals
         for p in &player.portal.portals {
             render_portal(p);
-        }
-        match remote_player {
-            Some(_) => {
-                let portal_data: (f32, f32, f32, f32, f32, f32) = remote_player.unwrap().1;
-                let portal1 = (portal_data.0, portal_data.1, 0, portal_data.4);
-                let portal2 = (portal_data.2, portal_data.3, 1, portal_data.5);
-                let mut render_portal = |p: (f32, f32, i32, f32)| {
-                    wincan.copy_ex(&portalsprite, Rect::new(500 * p.2 + 125, 0, 125, 250), Rect::new(p.0 as i32, p.1 as i32, 60, 100), p.3 as f64, None, false, false).unwrap();
-                };
-                render_portal(portal1);
-                render_portal(portal2);
-            }
-            None => {}
         }
 
         // wand color
