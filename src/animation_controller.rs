@@ -82,19 +82,7 @@ impl AnimController {
                 Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
             }
         } else {
-            if network.is_some() {
-                let network = network.as_ref().unwrap();
-                match network.get_network_mode() {
-                    networking::Mode::MultiplayerPlayer1 => {
-                        Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
-                    },
-                    networking::Mode::MultiplayerPlayer2 => {
-                        Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
-                    }
-                }
-            } else {
-                Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
-            }
+            Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
         }
     }
 }
