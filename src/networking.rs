@@ -19,8 +19,14 @@ pub struct Network {
 
 impl Network {
     pub fn new(mode: Mode) -> Network {
-        let address_a = SocketAddr::from_str("192.168.50.149:34254").unwrap();
-        let address_b = SocketAddr::from_str("192.168.50.84:34255").unwrap();
+        /*
+        if on windows, use the PowerShell command
+        Get-NetIPAddress -InterfaceAlias Wi-Fi | select IPAddress
+        on p1's machine and p2's machine. Then change the addresses below
+        accordingly but don't change the port numbers (the numbers after the ':')
+        */
+        let p1_address = SocketAddr::from_str("127.0.0.1:34254").unwrap();
+        let p2_address = SocketAddr::from_str("127.0.0.1:34255").unwrap();
         let new_network = |local, remote| {
             let socket = UdpSocket::bind(local).expect("couldn't bind to local");
             socket.connect(remote).expect("couldn't connect to remote");
@@ -28,13 +34,13 @@ impl Network {
         };
         match mode {
             Mode::MultiplayerPlayer1 => {
-                let local = address_a;
-                let remote = address_b;
+                let local = p1_address;
+                let remote = p2_address;
                 new_network(local, remote)
             }
             Mode::MultiplayerPlayer2 => {
-                let local = address_b;
-                let remote = address_a;
+                let local = p2_address;
+                let remote = p1_address;
                 new_network(local, remote)
             }
         }
