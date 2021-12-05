@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 use std::convert::TryInto;
 
 use sdl2::event::Event;
@@ -36,7 +36,6 @@ const FRAME_TIME: Duration = Duration::from_millis(1000 / FRAME_RATE);
 pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                   mouse: MouseUtil, network: Option<Network>)
                   -> Result<(), String> {
-    mouse.show_cursor(false);
     /*
     Renderer setup begins here.
     Currently only includes loading textures.
@@ -57,6 +56,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let pressure_plate = texture_creator.load_texture("assets/in_game/level/pressure_plate/pressure_plate_spritesheet.png").unwrap();
     let gate = texture_creator.load_texture("assets/in_game/level/gate/gate.png").unwrap();
     let loading_screen = texture_creator.load_texture("assets/out_of_game/loading_screen/stone_brick_loading_sprite_sheet_192x256.png").unwrap();
+    let potionsprite = texture_creator.load_texture("assets/in_game/player/potions/potions.png").unwrap();
+    let instructions = texture_creator.load_texture("assets/out_of_game/instructions/instructions.png").unwrap();
     /*
     Renderer setup complete.
      */
@@ -67,15 +68,13 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     // Colliders
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
-    let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
-    let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
     // Controllers and portals
     let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 40.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
-    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
+    let p1portalcon = PortalController::new(-10, 60, 20, 65, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(), vec!(), vec!());
 
     // dummy pressure plate controller, to be used later
     let mut platecon = PlateController::new(0, 0, 0, 0, 0, false);
@@ -102,6 +101,14 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     //level data
     let mut current_level = 0; // what level are we on?
     let final_level = 4; // what level is the last one?
+
+    //which type of portal are we creating?
+    // false = wand (raycast)
+    // true = potion (curved)
+    let mut throwing_portal = false;
+
+    let mut paused = true;
+    let mut last_pause_time = SystemTime::now();
 
     let mut level = levels::parse_level("level0.txt");
     // we read in the level from a file and add the necessary colliders and stuff
@@ -156,22 +163,33 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             match event {
                 Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => break 'game_loop,
                 Event::KeyDown { keycode: Some(Keycode::S), .. } =>
-                    {
-                        if block.carried {
-                            block.put_down();
-                        } else if player.collider.is_touching(&block.collider()) {
-                            block.picked_up(&player);
-                        }
-                    },
+                {
+                    if block.carried {
+                        block.put_down();
+                    } else if player.collider.is_touching(&block.collider()) {
+                        block.picked_up(&player);
+                    }
+                },
                 Event::KeyDown { keycode: Some(Keycode::R), .. } =>
-                    {
-                        //restart level
-                        player.respawn();
-                        player.portal.close_all();
-                        block.respawn();
-                    },
+                {
+                    //restart level
+                    player.respawn();
+                    player.portal.close_all();
+                    block.respawn();
+                },
+                Event::KeyDown { keycode: Some(Keycode::P), .. } =>
+                {
+                    //pause/unpause game
+                    if last_pause_time+Duration::from_millis(500) < SystemTime::now() {
+                        paused = !paused;
+                        last_pause_time = SystemTime::now();
+                    }
+                },
                 Event::KeyDown { keycode: Some(Keycode::LShift), .. } => {
                     player.portal.close_all();
+                }
+                Event::KeyDown { keycode: Some(Keycode::LAlt), .. } => {
+                        throwing_portal = !throwing_portal;
                 }
                 _ => {},
             }
@@ -264,10 +282,18 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
         // create the portals
         if event_pump.mouse_state().left() {
-            player.portal.open_portal(0);
+            if throwing_portal {
+                player.portal.throw_potion(0, event_pump.mouse_state().x(), event_pump.mouse_state().y());
+            } else {
+                player.portal.open_portal(0);
+            }
         }
         if event_pump.mouse_state().right() {
-            player.portal.open_portal(1);
+            if throwing_portal {
+                player.portal.throw_potion(1, event_pump.mouse_state().x(), event_pump.mouse_state().y());
+            } else {
+                player.portal.open_portal(1);
+            }
         }
         /*
         Local Game Input Processed
@@ -379,11 +405,42 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             None => {}
         }
 
-        // wand color
-        wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+        // render potions as the fly through the air
+        let mut potion_state = player.portal.get_potion_state();
+        if potion_state.0.is_some() {
+            let p0state = potion_state.0.unwrap();
+            let p0x = p0state.0;
+            let p0y = p0state.1;
+            let p0r = p0state.2;
+            wincan.copy_ex(&potionsprite, Rect::new(417, 0, 417, 417), Rect::new((p0x-12.5) as i32, (p0y-12.5) as i32, 25, 25), p0r, None, false, false)?;
+        }
+        if potion_state.1.is_some() {
+            let p1state = potion_state.1.unwrap();
+            let p1x = p1state.0;
+            let p1y = p1state.1;
+            let p1r = p1state.2;
+            wincan.copy_ex(&potionsprite, Rect::new(0, 0, 417, 417), Rect::new((p1x-12.5) as i32, (p1y-12.5) as i32, 25, 25), p1r, None, false, false)?;
+        }
 
-        //draw a custom cursor
-        wincan.copy(&cursor, None, Rect::new(event_pump.mouse_state().x() - 27, event_pump.mouse_state().y() - 38, 53, 75)).ok();
+        // wand and potions
+        if throwing_portal {
+            wincan.copy(&potionsprite, Rect::new((1-player.portal.last_portal()) as i32 *417, 0, 417, 417), Rect::new(player.physics.x() as i32 + player.portal.potion_x(), player.physics.y() as i32 + player.portal.potion_y(), 25, 25))?;
+        } else {
+            wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+        }
+        // the pause screen
+        if paused {
+            mouse.show_cursor(true);
+            player.stop();
+            wincan.copy(&instructions, None, Rect::new(240, 60, 800, 600))?;
+        } else {
+            player.unstop();
+            mouse.show_cursor(false);
+            //draw a custom cursor
+            wincan.copy(&cursor, None, Rect::new(event_pump.mouse_state().x() - 27, event_pump.mouse_state().y() - 38, 53, 75)).ok();
+        }
+
+        
 
         //draw to the screen
         wincan.present();
