@@ -91,6 +91,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
     let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
 
+    
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
     // Entities
@@ -196,9 +197,10 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         Begin Networking
          */
         let mut remote_player = None;
+        let network_option = &network;
         if network.is_some() {
             let network = network.as_ref().unwrap();
-            if let Err(e) = network.pack_and_send_data(&mut player, &block) {
+            if let Err(e) = network.pack_and_send_data(&mut player, &block, network_option) {
                 eprintln!("{}", e);
             }
             let mut buf = network.get_packet_buffer();
@@ -432,28 +434,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, network: &Option<Network>) -> Result<(), String>{
     let pos_rect = player1.physics.position_rect();
     let pos_rect = Rect::new(pos_rect.0, pos_rect.1, pos_rect.2, pos_rect.3);
-    let anim_rect;
-    if network.is_some() {
-        let network = network.as_ref().unwrap();
-        match network.get_network_mode() {
-            networking::Mode::MultiplayerPlayer1 => {
-                wincan.copy_ex(&texture, player1.anim.next_anim(), pos_rect, 0.0, None, player1.flip_horizontal, false)
-
-            },
-            networking::Mode::MultiplayerPlayer2 => {
-                anim_rect =  Rect::new(
-                    player1.anim.next_anim().x(),
-                    (player1.anim.next_anim().height() * 2) as i32 + player1.anim.next_anim().y() as i32,
-                    player1.anim.next_anim().width(),
-                    player1.anim.next_anim().height(),
-                );
-                wincan.copy_ex(&texture, anim_rect, pos_rect, 0.0, None, player1.flip_horizontal, false)
-            }
-        }
-    } else {
-        wincan.copy_ex(&texture, player1.anim.next_anim(), pos_rect, 0.0, None, player1.flip_horizontal, false)
-
-    }
+    wincan.copy_ex(&texture, player1.anim.next_anim(network), pos_rect, 0.0, None, player1.flip_horizontal, false)
 }
 
 fn render_remote_player(wincan: &mut WindowCanvas, player_sprite: &Texture, player_pos: (f32, f32), flip: bool, anim_rect: Rect) -> Result<(), String> {

@@ -2,6 +2,7 @@ use std::convert::TryInto;
 
 use sdl2::rect::Rect;
 use crate::physics_controller::PhysicsController;
+use crate::networking::{Network, self};
 
 pub struct AnimController {
     columns: i32,
@@ -10,7 +11,7 @@ pub struct AnimController {
     animations: Vec<Anim>,
     previous_frame: i32,
     frames_frozen: i32,
-    should_animate: bool
+    should_animate: bool,
 }
 
 impl AnimController {
@@ -40,7 +41,7 @@ impl AnimController {
     }
 
     //next_anim: returns a rect representing the next frame to be drawn
-    pub fn next_anim(&mut self) -> Rect {
+    pub fn next_anim(&mut self, network: &Option<Network>) -> Rect {
         return if self.should_animate {
             let valid_animations = self.animations.iter().filter(|a| a.current_priority() >= 0).collect::<Vec<&Anim>>();
             let mut max_priority_anim = valid_animations[0];
@@ -67,9 +68,33 @@ impl AnimController {
             }
             self.previous_frame = new_frame;
             // calculate where in the sprite sheet this frame is and return it
-            Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
+            if network.is_some() {
+                let network = network.as_ref().unwrap();
+                match network.get_network_mode() {
+                    networking::Mode::MultiplayerPlayer1 => {
+                        Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
+                    },
+                    networking::Mode::MultiplayerPlayer2 => {
+                        Rect::new((new_frame % self.columns) * self.width, ((self.previous_frame / self.columns) * self.height) + self.height * 2, self.width as u32, self.height as u32)
+                    }
+                }
+            } else {
+                Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
+            }
         } else {
-            Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
+            if network.is_some() {
+                let network = network.as_ref().unwrap();
+                match network.get_network_mode() {
+                    networking::Mode::MultiplayerPlayer1 => {
+                        Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
+                    },
+                    networking::Mode::MultiplayerPlayer2 => {
+                        Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
+                    }
+                }
+            } else {
+                Rect::new((self.previous_frame % self.columns) * self.width, (self.previous_frame / self.columns) * self.height, self.width as u32, self.height as u32)
+            }
         }
     }
 }

@@ -51,6 +51,7 @@ impl Network {
     pub fn pack_and_send_data(
         &self, player: &mut Player,
         block: &ObjectController,
+        network: &Option<Network>,
     ) -> std::io::Result<usize> {
 
         //Player Information
@@ -58,12 +59,9 @@ impl Network {
         let player_ypos = player.physics.y().to_le_bytes();
         let flip = player.flip_horizontal as u32;
         let flip = flip.to_le_bytes();
-        let anim = player.anim.next_anim();
+        let anim = player.anim.next_anim(network);
         let ax = anim.x().to_le_bytes();
-        let ay = match self.mode {
-            Mode::MultiplayerPlayer1 => anim.y(),
-            Mode::MultiplayerPlayer2 => (2*anim.height()) as i32 + anim.y(),
-        }.to_le_bytes(); // to get to green characters
+        let ay = anim.y().to_le_bytes();
         let aw = anim.width().to_le_bytes();
         let ah = anim.height().to_le_bytes();
 
