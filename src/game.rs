@@ -97,8 +97,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let mut player = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
     let mut block = ObjectController::new(block_collider);
 
-    let mut level_cleared = false;
-
     //level data
     let mut current_level = 0; // what level are we on?
     let final_level = 4; // what level is the last one?
@@ -150,7 +148,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     Game state setup complete.
      */
     // ****************************************************************
-
+    let mut level_cleared_time: Option<Instant> = None;
     /*
     Begin game update loop.
      */
@@ -195,82 +193,19 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 _ => {},
             }
         }
-
-        let keystate: HashSet<Keycode> = event_pump
-            .keyboard_state()
-            .pressed_scancodes()
-            .filter_map(Keycode::from_scancode)
-            .collect();
-
-        move_player(&mut player, &keystate);
-
-        // Teleport the player
-        player.portal.teleport(&mut player.collider, &mut player.physics);
-
-         /*
-        Local Game Input Processed
-         */
-        // *************************************************************************
         /*
-        Begin Networking
+        Move to next level
          */
-        let mut remote_player = None;
-        let network_option = &network;
-        if network.is_some() {
-            let network = network.as_ref().unwrap();
-            if let Err(e) = network.pack_and_send_data(&mut player, &block, network_option) {
-                eprintln!("{}", e);
+        if let Some(time) = level_cleared_time {
+            if time.elapsed() < Duration::from_secs(3) {
+                wincan.copy(&castle_bg, None, None);
+                wincan.present();
+                continue 'game_loop;
             }
-            match network.get_packet_buffer() {
-                Ok(mut buf) => {
-                    let player_data = networking::unpack_player_data(&mut buf).unwrap();
-                    let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
-                    let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
-                    let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-                    remote_player = Some((player_data, portal_data, block_data, wand_data));
-                }
-                Err(e) => {
-                    eprintln!("{}", e);
-                }
-            }
-        }
-        /*
-        End Networking
-         */
-        /*
-        End game state update.
-         */
-
-        // **********************************************************************
-        /*
-        Begin rendering current frame.
-         */
-
-        let mut remote_collider = RectCollider::new(-300.0, -300.0, 69.0, 98.0);
-        if remote_player.is_some() {
-            let remote_player = remote_player.unwrap().0;
-            remote_collider = RectCollider::new(remote_player.0, remote_player.1, 69.0, 98.0);
-            if level_cleared == false && player.collider.is_touching(&door_collider) && remote_collider.is_touching(&door_collider) {
-                level_cleared = true;
-                player.stop();
-            }
-
-        } else {
-            // check to see if player has reached the end of the level
-            if level_cleared == false && player.collider.is_touching(&door_collider) {
-                level_cleared = true;
-                player.stop();
-            }
-        }
-
-        if level_cleared {
-            //this is just until we get the level changing logic completed
             if current_level == final_level { break 'game_loop; }
             player.reset_colliders();
             block.reset_colliders();
             current_level += 1;
-            // this is what I'm going with until I figure out how
-            // to do "level"+current_level+".txt"
             let current_level_file = &format!("level{}.txt", current_level);
             level = levels::parse_level(current_level_file);
             // we read in the level from a file and add the necessary colliders and stuff
@@ -307,13 +242,64 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 platecon = PlateController::new(0, 0, 0, 0, 0, false);
             }
             player.unstop();
-            level_cleared = false;
+            level_cleared_time = None;
         }
 
+        let keystate: HashSet<Keycode> = event_pump
+            .keyboard_state()
+            .pressed_scancodes()
+            .filter_map(Keycode::from_scancode)
+            .collect();
+
+        move_player(&mut player, &keystate);
+
+        // Teleport the player
+        player.portal.teleport(&mut player.collider, &mut player.physics);
+
+        /*
+       Local Game Input Processed
+        */
+        // *************************************************************************
+        /*
+        Begin Networking
+         */
+        let mut remote_player = None;
+        let network_option = &network;
+        if network.is_some() {
+            let network = network.as_ref().unwrap();
+            if let Err(e) = network.pack_and_send_data(&mut player, &block, network_option) {
+                eprintln!("{}", e);
+            }
+            match network.get_packet_buffer() {
+                Ok(mut buf) => {
+                    let player_data = networking::unpack_player_data(&mut buf).unwrap();
+                    let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+                    let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
+                    let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
+                    remote_player = Some((player_data, portal_data, block_data, wand_data));
+                }
+                Err(e) => {
+                    eprintln!("{}", e);
+                }
+            }
+        }
+        /*
+        End Networking
+         */
+        // *************************************************************************************
+        /*
+        Begin Game State Update:
+        Check if level is cleared, kill condition, respawn condition, flip horizontal,
+        and update portals.
+         */
+        let mut remote_player_collider = RectCollider::new(-300.0, -300.0, 69.0, 98.0);
+
+        // kill condition
         if !player.is_dead() && (player.physics.x() < 0.0 || player.physics.x() > 1280.0 || player.physics.y() < 0.0 || player.physics.y() > 720.0) {
             player.kill();
         }
 
+        // respawn condition
         if player.is_dead() {
             player.respawn();
         }
@@ -331,18 +317,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             } else {
                 player.flip_horizontal
             };
-        
-        /*
-        Local Game Input Processed
-         */
-        // *************************************************************************
-        /*
-        Begin Networking
-         */
 
+        // create the portals
         if remote_player.is_some() {
             let network = network.as_ref().unwrap();
-            match network.get_network_mode() {
+            match network.mode {
                 networking::Mode::MultiplayerPlayer1 => {
                     if event_pump.mouse_state().left() {
                         player.portal.open_portal(0);
@@ -378,11 +357,32 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 }
             }
         }
-       
-        
+        if remote_player.is_some() {
+            let remote_player = remote_player.unwrap().0;
+            remote_player_collider = RectCollider::new(remote_player.0, remote_player.1, 69.0, 98.0);
+            if level_cleared_time.is_none() && player.collider.is_touching(&door_collider) && remote_player_collider.is_touching(&door_collider) {
+                level_cleared_time = Some(Instant::now());
+                player.stop();
+            }
+        } else {
+            // check to see if player has reached the end of the level
+            if level_cleared_time.is_none() && player.collider.is_touching(&door_collider) {
+                level_cleared_time = Some(Instant::now());
+                player.stop();
+            }
+        }
+        /*
+        End game state update.
+         */
+
+        // **********************************************************************
+        /*
+        Begin rendering current frame.
+         */
+
         wincan.copy(&castle_bg, None, None).ok();
 
-        draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider, &network, &remote_collider);
+        draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider, &network, &remote_player_collider);
         // draw_collision_boxes(&mut wincan, &player1);
         // draw the surfaces
         for obj in level.iter() {
@@ -453,7 +453,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 let wand_data = remote_player.unwrap().3;
                 let player_data = remote_player.unwrap().0;
                 let network = network.as_ref().unwrap();
-                match network.get_network_mode() {
+                match network.mode {
                     networking::Mode::MultiplayerPlayer1 => {
                         wincan.copy_ex(&bluewand , None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
                         wincan.copy_ex(&orangewand, None, Rect::new(player_data.0 as i32 + wand_data.0, player_data.1 as i32 + wand_data.1, 100, 20), wand_data.2 as f64, None, false, false)?;

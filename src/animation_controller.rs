@@ -70,7 +70,7 @@ impl AnimController {
             // calculate where in the sprite sheet this frame is and return it
             if network.is_some() {
                 let network = network.as_ref().unwrap();
-                match network.get_network_mode() {
+                match network.mode {
                     networking::Mode::MultiplayerPlayer1 => {
                         Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
                     },
