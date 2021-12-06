@@ -58,6 +58,31 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let loading_screen = texture_creator.load_texture("assets/out_of_game/loading_screen/stone_brick_loading_sprite_sheet_192x256.png").unwrap();
     let potionsprite = texture_creator.load_texture("assets/in_game/player/potions/potions.png").unwrap();
     let instructions = texture_creator.load_texture("assets/out_of_game/instructions/instructions.png").unwrap();
+
+    /*
+    Setup loading screen
+     */
+    let mut source = Vec::new();
+    for y in 0..4 {
+        for x in 0..3 {
+            source.push(Rect::new(x*64, y*64, 64, 64));
+        }
+    }
+    let destination = Rect::new(
+        (1280 / 2) - 32,
+        (720 / 2) - 32,
+        64 * 2,
+        64 * 2,
+    );
+    let loading_duration: f32 = 2.0;
+    let intervals = (1..13).map(|i| (loading_duration / 12 as f32) * i as f32);
+    let loading_clock: Vec<(f32, Rect, Rect)> = intervals
+        .zip(source)
+        .map(|(i, s)| (i, s, destination))
+        .collect();
+    /*
+    Loading screen setup complete
+     */
     /*
     Renderer setup complete.
      */
@@ -197,10 +222,16 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         Move to next level
          */
         if let Some(time) = level_cleared_time {
-            if time.elapsed() < Duration::from_secs(3) {
-                wincan.copy(&castle_bg, None, None);
-                wincan.present();
-                continue 'game_loop;
+            for frame in &loading_clock {
+                let (interval, source, destination) = frame;
+                if time.elapsed() < Duration::from_secs_f32(*interval) {
+                    wincan.set_draw_color(Color::BLACK);
+                    wincan.clear();
+                    wincan.copy(&loading_screen, *source, *destination);
+                    wincan.present();
+                    continue 'game_loop;
+                }
+
             }
             if current_level == final_level { break 'game_loop; }
             player.reset_colliders();
