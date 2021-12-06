@@ -58,6 +58,31 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let loading_screen = texture_creator.load_texture("assets/out_of_game/loading_screen/stone_brick_loading_sprite_sheet_192x256.png").unwrap();
     let potionsprite = texture_creator.load_texture("assets/in_game/player/potions/potions.png").unwrap();
     let instructions = texture_creator.load_texture("assets/out_of_game/instructions/instructions.png").unwrap();
+
+    /*
+    Setup loading screen
+     */
+    let mut source = Vec::new();
+    for y in 0..4 {
+        for x in 0..3 {
+            source.push(Rect::new(x*64, y*64, 64, 64));
+        }
+    }
+    let destination = Rect::new(
+        (1280 / 2) - 32,
+        (720 / 2) - 32,
+        64 * 2,
+        64 * 2,
+    );
+    let loading_duration: f32 = 2.0;
+    let intervals = (1..13).map(|i| (loading_duration / 12 as f32) * i as f32);
+    let loading_clock: Vec<(f32, Rect, Rect)> = intervals
+        .zip(source)
+        .map(|(i, s)| (i, s, destination))
+        .collect();
+    /*
+    Loading screen setup complete
+     */
     /*
     Renderer setup complete.
      */
@@ -161,35 +186,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => break 'game_loop,
-                Event::KeyDown { keycode: Some(Keycode::S), .. } =>
-                {
-                    if block.carried {
-                        block.put_down();
-                    } else if player.collider.is_touching(&block.collider()) {
-                        block.picked_up(&player);
-                    }
-                },
-                Event::KeyDown { keycode: Some(Keycode::R), .. } =>
-                {
-                    //restart level
-                    player.respawn();
-                    player.portal.close_all();
-                    block.respawn();
-                },
-                Event::KeyDown { keycode: Some(Keycode::P), .. } =>
-                {
-                    //pause/unpause game
-                    if last_pause_time+Duration::from_millis(500) < SystemTime::now() {
-                        paused = !paused;
-                        last_pause_time = SystemTime::now();
-                    }
-                },
-                Event::KeyDown { keycode: Some(Keycode::LShift), .. } => {
-                    player.portal.close_all();
-                }
-                Event::KeyDown { keycode: Some(Keycode::LAlt), .. } => {
-                        throwing_portal = !throwing_portal;
-                }
                 _ => {},
             }
         }
@@ -197,10 +193,16 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         Move to next level
          */
         if let Some(time) = level_cleared_time {
-            if time.elapsed() < Duration::from_secs(3) {
-                wincan.copy(&castle_bg, None, None);
-                wincan.present();
-                continue 'game_loop;
+            for frame in &loading_clock {
+                let (interval, source, destination) = frame;
+                if time.elapsed() < Duration::from_secs_f32(*interval) {
+                    wincan.set_draw_color(Color::BLACK);
+                    wincan.clear();
+                    wincan.copy(&loading_screen, *source, *destination);
+                    wincan.present();
+                    continue 'game_loop;
+                }
+
             }
             if current_level == final_level { break 'game_loop; }
             player.reset_colliders();
@@ -245,13 +247,50 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             level_cleared_time = None;
         }
 
+        /*
+        Process input
+         */
         let keystate: HashSet<Keycode> = event_pump
             .keyboard_state()
             .pressed_scancodes()
             .filter_map(Keycode::from_scancode)
             .collect();
 
-        move_player(&mut player, &keystate);
+        if keystate.contains(&Keycode::A) {
+            player.physics.accelerate_left();
+        }
+        if keystate.contains(&Keycode::D) {
+            player.physics.accelerate_right();
+        }
+        if keystate.contains(&Keycode::W) || keystate.contains(&Keycode::Space) {
+            player.physics.jump();
+        }
+        if keystate.contains(&Keycode::S) {
+            if block.carried {
+                block.put_down();
+            } else if player.collider.is_touching(&block.collider()) {
+                block.picked_up(&player);
+            }
+        }
+        if keystate.contains(&Keycode::R) {
+            //restart level
+            player.respawn();
+            player.portal.close_all();
+            block.respawn();
+        }
+        if keystate.contains(&Keycode::P) {
+            //pause/unpause game
+            if last_pause_time+Duration::from_millis(500) < SystemTime::now() {
+                paused = !paused;
+                last_pause_time = SystemTime::now();
+            }
+        }
+        if keystate.contains(&Keycode::LShift) {
+            player.portal.close_all();
+        }
+        if keystate.contains(&Keycode::LAlt) {
+            throwing_portal = !throwing_portal;
+        }
 
         // Teleport the player
         player.portal.teleport(&mut player.collider, &mut player.physics);
@@ -374,7 +413,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         /*
         End game state update.
          */
-
         // **********************************************************************
         /*
         Begin rendering current frame.
@@ -527,18 +565,6 @@ fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Pla
 
 fn render_remote_player(wincan: &mut WindowCanvas, player_sprite: &Texture, player_pos: (f32, f32), flip: bool, anim_rect: Rect) -> Result<(), String> {
     wincan.copy_ex(player_sprite, anim_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
-}
-
-fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
-    if keystate.contains(&Keycode::A) {
-        player.physics.accelerate_left();
-    }
-    if keystate.contains(&Keycode::D) {
-        player.physics.accelerate_right();
-    }
-    if keystate.contains(&Keycode::W) || keystate.contains(&Keycode::Space) {
-        player.physics.jump();
-    }
 }
 
 fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController, sprite: &Texture) {
