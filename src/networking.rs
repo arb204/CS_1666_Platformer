@@ -46,10 +46,6 @@ impl Network {
         }
     }
 
-    pub fn get_network_mode(&self) -> Mode {
-        self.mode
-    }
-
     pub fn get_packet_buffer(&self) -> Result<[u8; PACKET_SIZE], String> {
         let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
         let receive_result = self.socket.recv_from(&mut buf);
