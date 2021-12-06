@@ -25,8 +25,8 @@ impl Network {
         on p1's machine and p2's machine. Then change the addresses below
         accordingly but don't change the port numbers (the numbers after the ':')
         */
-        let p1_address = SocketAddr::from_str("127.0.0.1:34254").unwrap();
-        let p2_address = SocketAddr::from_str("127.0.0.1:34255").unwrap();
+        let p1_address = SocketAddr::from_str("192.168.50.149:34254").unwrap();
+        let p2_address = SocketAddr::from_str("192.168.50.84:34255").unwrap();
         let new_network = |local, remote| {
             let socket = UdpSocket::bind(local).expect("couldn't bind to local");
             socket.connect(remote).expect("couldn't connect to remote");

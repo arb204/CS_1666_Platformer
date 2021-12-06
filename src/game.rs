@@ -229,6 +229,9 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     wincan.clear();
                     wincan.copy(&loading_screen, *source, *destination);
                     wincan.present();
+                    if network.is_some() {
+                        network.as_ref().unwrap().pack_and_send_data(&mut player, &block, &network);
+                    }
                     continue 'game_loop;
                 }
 
