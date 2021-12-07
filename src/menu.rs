@@ -5,9 +5,9 @@ use sdl2::mouse::MouseUtil;
 use sdl2::render::WindowCanvas;
 
 use crate::game;
-use crate::networking::Network;
+use crate::networking::Multiplayer;
 
-pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, network: Option<Network>)
+pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump, mouse: MouseUtil, multiplayer: Option<Multiplayer>)
 {
     let texture_creator = wincan.texture_creator();
 
@@ -29,5 +29,5 @@ pub(crate) fn show_menu(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPum
             }
         }
     }
-    game::run(wincan, event_pump, mouse, network).ok();
+    game::run(wincan, event_pump, mouse, multiplayer).ok();
 }

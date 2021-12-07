@@ -31,21 +31,21 @@ fn main() {
 
 fn perform_start_logic(wincan: WindowCanvas, event_pump: EventPump, mouse: MouseUtil) {
 	let args: Vec<String> = env::args().collect();
-	let mut network = None;
+	let mut multiplayer = None;
 	if args.len() < 2 || (args.len() == 2 && &args[1] == "singleplayer") {
-		menu::show_menu(wincan, event_pump, mouse, network);
+		menu::show_menu(wincan, event_pump, mouse, multiplayer);
 	} else if args.len() == 2 && &args[1] == "credits" {
 		credits::show_credits(wincan, event_pump);
 	} else if args.len() == 3 && &args[1] == "multiplayer" {
 		if &args[2] == "1" || &args[2] == "p1" {
-			network = Some(networking::Network::new(networking::Mode::MultiplayerPlayer1));
+			multiplayer = Some(networking::Multiplayer::new(networking::Mode::MultiplayerPlayer1));
 		} else if &args[2] == "2" || &args[2] == "p2" {
-			network = Some(networking::Network::new(networking::Mode::MultiplayerPlayer2));
+			multiplayer = Some(networking::Multiplayer::new(networking::Mode::MultiplayerPlayer2));
 		} else {
 			println!("Must use: multiplayer 1 or multiplayer 2");
 			process::exit(0);
 		}
-		menu::show_menu(wincan, event_pump, mouse, network);
+		menu::show_menu(wincan, event_pump, mouse, multiplayer);
 	} else {
 		println!("Invalid Arguments. Your options are:\n\
 		singleplayer (default)\nmultiplayer 1\nmultiplayer 2\nor credits.");

@@ -2,7 +2,8 @@ use std::convert::TryInto;
 
 use sdl2::rect::Rect;
 use crate::physics_controller::PhysicsController;
-use crate::networking::{Network, self};
+use crate::networking;
+use crate::networking::Multiplayer;
 
 pub struct AnimController {
     columns: i32,
@@ -41,7 +42,7 @@ impl AnimController {
     }
 
     //next_anim: returns a rect representing the next frame to be drawn
-    pub fn next_anim(&mut self, network: &Option<Network>) -> Rect {
+    pub fn next_anim(&mut self, multiplayer: &Option<Multiplayer>) -> Rect {
         return if self.should_animate {
             let valid_animations = self.animations.iter().filter(|a| a.current_priority() >= 0).collect::<Vec<&Anim>>();
             let mut max_priority_anim = valid_animations[0];
@@ -68,9 +69,9 @@ impl AnimController {
             }
             self.previous_frame = new_frame;
             // calculate where in the sprite sheet this frame is and return it
-            if network.is_some() {
-                let network = network.as_ref().unwrap();
-                match network.mode {
+            if multiplayer.is_some() {
+                let multiplayer = multiplayer.as_ref().unwrap();
+                match multiplayer.mode {
                     networking::Mode::MultiplayerPlayer1 => {
                         Rect::new((new_frame % self.columns) * self.width, (new_frame / self.columns) * self.height, self.width as u32, self.height as u32)
                     },
