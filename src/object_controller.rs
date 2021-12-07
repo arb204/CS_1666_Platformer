@@ -4,7 +4,7 @@ use crate::player::Player;
 pub struct ObjectController {
     collider: RectCollider,
     obstacles: Vec<RectCollider>,
-    carried: bool,
+    pub carried: bool,
     in_air: bool,
     new_level: bool,
     fall_speed: f32,
@@ -31,7 +31,7 @@ impl ObjectController {
 
     pub fn x(&self) -> i32 { self.collider.x() as i32}
     pub fn y(&self) -> i32 { self.collider.y() as i32}
-    pub fn carried(&self) -> bool { self.carried }
+    // pub fn carried(&self) -> bool { self.carried }
     pub fn in_air(&self) -> bool { self.in_air }
     pub fn new_level(&self) -> bool { self.new_level }
     pub fn fall_speed(&self) -> f32 { self.fall_speed }
@@ -49,19 +49,15 @@ impl ObjectController {
         self.offset = get_offset(self.collider(), player.collider);
     }
 
-    pub fn put_down(&mut self, player: &Player) {
+    pub fn put_down(&mut self) {
         self.carried = false;
-        // self.fall_speed += 1.0;
-        // self.collider.set_y((self.y() + 20) as f32);
     }
 
-    pub fn respawn(&mut self, player: &Player) {
+    pub fn respawn(&mut self) {
         self.new_level = true;
-        // self.fall_speed += 1.0;
-        // self.collider.set_y((self.y() + 20) as f32);
     }
 
-    pub fn set_start_pos(&mut self, player: &Player, x: f32, y: f32) {
+    pub fn set_start_pos(&mut self, x: f32, y: f32) {
         self.start_x = x;
         self.start_y = y;
     }

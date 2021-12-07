@@ -1,7 +1,6 @@
 use std::collections::HashSet;
-use std::net::UdpSocket;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant, SystemTime};
 use std::convert::TryInto;
 
 use sdl2::event::Event;
@@ -12,30 +11,31 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 
-use crate::{levels, networking};
+use crate::{levels, networking, rect_collider};
 use crate::animation_controller::Anim;
 use crate::animation_controller::AnimController;
 use crate::animation_controller::Condition;
-use crate::networking::{get_receiving_socket, get_sending_socket};
 use crate::physics_controller::PhysicsController;
 use crate::player::Player;
 use crate::portal_controller::{Portal, PortalController};
 use crate::rect_collider::RectCollider;
 use crate::object_controller::ObjectController;
 use crate::plate_controller::PlateController;
+use crate::credits;
+use crate::networking::Network;
 
 const TILE_SIZE: u32 = 64;
-const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
+// const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
 
 const DOORW: u32 = 160;
 const DOORH: u32 = 230;
 //const DOOR_POS: (u32, u32) = (1060, 430);
 const FRAME_RATE: u64 = 60;
+const FRAME_TIME: Duration = Duration::from_millis(1000 / FRAME_RATE);
 
 pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
-                  mouse: MouseUtil, network_mode: networking::NetworkingMode)
+                  mouse: MouseUtil, network: Option<Network>)
                   -> Result<(), String> {
-    mouse.show_cursor(false);
     /*
     Renderer setup begins here.
     Currently only includes loading textures.
@@ -47,9 +47,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let cursor = texture_creator.load_texture("assets/in_game/cursor/cursor.png").unwrap();
     let portalsprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
     let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
-    let stone_sprite = texture_creator.load_texture("assets/in_game/level/purple_floor/purple_floor_tile.png").unwrap();
     let door_sheet = texture_creator.load_texture("assets/in_game/level/door/doors_sprite_sheet.png").unwrap();
-    let level_cleared_msg_sprite = texture_creator.load_texture("assets/in_game/message/level_cleared/level_cleared_msg.png").unwrap();
     let castle_bg = texture_creator.load_texture("assets/in_game/level/background/castle/castle-bg.png").unwrap();
     let nonportal_surface = texture_creator.load_texture("assets/in_game/level/brick/nonportal/stone_brick_64x64.png").unwrap();
     let portal_surface = texture_creator.load_texture("assets/in_game/level/brick/portal/portal_brick_64x64.png").unwrap();
@@ -57,6 +55,34 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let block_texture = texture_creator.load_texture("assets/in_game/block/block.png").unwrap();
     let pressure_plate = texture_creator.load_texture("assets/in_game/level/pressure_plate/pressure_plate_spritesheet.png").unwrap();
     let gate = texture_creator.load_texture("assets/in_game/level/gate/gate.png").unwrap();
+    let loading_screen = texture_creator.load_texture("assets/out_of_game/loading_screen/stone_brick_loading_sprite_sheet_192x256.png").unwrap();
+    let potionsprite = texture_creator.load_texture("assets/in_game/player/potions/potions.png").unwrap();
+    let instructions = texture_creator.load_texture("assets/out_of_game/instructions/instructions.png").unwrap();
+
+    /*
+    Setup loading screen
+     */
+    let mut source = Vec::new();
+    for y in 0..4 {
+        for x in 0..3 {
+            source.push(Rect::new(x*64, y*64, 64, 64));
+        }
+    }
+    let destination = Rect::new(
+        (1280 / 2) - 32,
+        (720 / 2) - 32,
+        64 * 2,
+        64 * 2,
+    );
+    let loading_duration: f32 = 2.0;
+    let intervals = (1..13).map(|i| (loading_duration / 12 as f32) * i as f32);
+    let loading_clock: Vec<(f32, Rect, Rect)> = intervals
+        .zip(source)
+        .map(|(i, s)| (i, s, destination))
+        .collect();
+    /*
+    Loading screen setup complete
+     */
     /*
     Renderer setup complete.
      */
@@ -67,15 +93,13 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     // Colliders
     let door_collider = RectCollider::new((1280 - DOORW + 25) as f32, (720 - DOORH + 25) as f32, (DOORW/2 - 10) as f32, (DOORH - 90) as f32);
     let p1collider = RectCollider::new(0.0, 0.0, 69.0, 98.0);
-    let blue_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
-    let orange_portal_collider = RectCollider::new(-100.0, -100.0, 60.0, 100.0);
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
     // Controllers and portals
-    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 40.0, vec!());
+    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 2, 0.2, 1.0, 40.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
-    let p1portalcon = PortalController::new(-10, 60, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(blue_portal_collider, orange_portal_collider), vec!(), vec!());
+    let p1portalcon = PortalController::new(-10, 60, 20, 65, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(), vec!(), vec!());
 
     // dummy pressure plate controller, to be used later
     let mut platecon = PlateController::new(0, 0, 0, 0, 0, false);
@@ -91,88 +115,187 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
     let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
 
+
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
     // Entities
-    let mut player1 = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
+    let mut player = Player::new(p1physcon, p1collider, p1anim, p1portalcon);
     let mut block = ObjectController::new(block_collider);
-
-    let mut flip = false;
-
-    let mut level_cleared = false;
-
-    // used to test the orientation of the portals for teleporting
-    let mut portal_blue_side = -1;
-    let mut portal_orange_side = -1;
 
     //level data
     let mut current_level = 0; // what level are we on?
     let final_level = 4; // what level is the last one?
 
+    //which type of portal are we creating?
+    // false = wand (raycast)
+    // true = potion (curved)
+    let mut throwing_portal = false;
+
+    let mut paused = true;
+    let mut last_pause_time = SystemTime::now();
+
+    // data to help get the time elapsed and dash time
+    let mut first_loop = 0;
+    let mut start_time = 0;
+    let mut elapsed_time = 0;
+    let mut time_of_dash = 0; // the time that 'E' is pressed
+    let mut currently_dashing = 0; // 0 is not dashing, 1 if dashing
+    let mut first_press: i8 = 0;
 
     let mut level = levels::parse_level("level0.txt");
-
     // we read in the level from a file and add the necessary colliders and stuff
+    let mut level_has_gate = false;
     for obj in level.iter() {
+        let new_collider = || {
+            RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap() * TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap() * TILE_SIZE) as f32)
+        };
         if obj[0] == "start" {
-            player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
-            player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
-            player1.respawn();
-            block.set_start_pos(&player1, obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
-            block.respawn(&player1);
+            player.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
+            player.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
+            player.respawn();
+            block.set_start_pos(obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
+            block.respawn();
         }
         if obj[0] == "portalblock" {
-            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, "portalblock");
-            block.add_collider(new_collider);
+            player.add_collider(new_collider(), "portalblock");
+            block.add_collider(new_collider());
         }
         if obj[0] == "nonportalblock" {
-            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, "nonportalblock");
-            block.add_collider(new_collider);
+            player.add_collider(new_collider(), "nonportalblock");
+            block.add_collider(new_collider());
         }
         if obj[0] == "portalglass" {
-            let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-            player1.add_collider(new_collider, "portalglass");
-            block.add_collider(new_collider);
+            player.add_collider(new_collider(), "portalglass");
+            block.add_collider(new_collider());
         }
         if obj[0] == "gateplate" {
-            platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1)
+            platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1);
+            level_has_gate = true;
         }
     }
+    if !level_has_gate {
+        platecon = PlateController::new(0, 0, 0, 0, 0, false);
+    }
+
     /*
     Game state setup complete.
      */
     // ****************************************************************
-
+    let mut level_cleared_time: Option<Instant> = None;
     /*
     Begin game update loop.
      */
-    'gameloop: loop {
+    'game_loop: loop {
+        // Timer tick
+        let tick = Instant::now();
+        // get the elapsed time
+        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(n) => {
+                if first_loop == 0 {
+                    start_time = n.as_millis();
+                    first_loop += 1;
+                }
+                elapsed_time = n.as_millis() - start_time;
+            }
+            Err(_) => panic!("SystemTime before UNIX EPOCH!"),
+        }
         /*
-        Begin game state update.
+        Process local game input
          */
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit{..} | Event::KeyDown{keycode: Some(Keycode::Escape), ..} => break 'gameloop,
-                Event::KeyDown{keycode: Some(Keycode::S), ..} =>
+                Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => break 'game_loop,
+                Event::KeyDown { keycode: Some(Keycode::S), .. } =>
                 {
-                    if block.carried() {
-                        block.put_down(&player1);
-                    }
-                    else if player1.collider.is_touching(&block.collider()) {
-                        block.picked_up(&player1);
+                    if block.carried {
+                        block.put_down();
+                    } else if player.collider.is_touching(&block.collider()) {
+                        block.picked_up(&player);
                     }
                 },
-                Event::KeyDown{keycode: Some(Keycode::R), ..} =>
+                Event::KeyDown { keycode: Some(Keycode::R), .. } =>
                 {
                     //restart level
-                    player1.respawn();
-                    player1.portal.close_all();
-                    block.respawn(&player1);
+                    player.respawn();
+                    player.portal.close_all();
+                    block.respawn();
                 },
+                Event::KeyDown { keycode: Some(Keycode::P), .. } =>
+                {
+                    //pause/unpause game
+                    if last_pause_time+Duration::from_millis(500) < SystemTime::now() {
+                        paused = !paused;
+                        last_pause_time = SystemTime::now();
+                    }
+                },
+                Event::KeyDown { keycode: Some(Keycode::LShift), .. } => {
+                    player.portal.close_all();
+                }
+                Event::KeyDown { keycode: Some(Keycode::LAlt), .. } => {
+                        throwing_portal = !throwing_portal;
+                }
                 _ => {},
             }
+        }
+        /*
+        Move to next level
+         */
+        if let Some(time) = level_cleared_time {
+            for frame in &loading_clock {
+                let (interval, source, destination) = frame;
+                if time.elapsed() < Duration::from_secs_f32(*interval) {
+                    wincan.set_draw_color(Color::BLACK);
+                    wincan.clear();
+                    wincan.copy(&loading_screen, *source, *destination);
+                    wincan.present();
+                    if network.is_some() {
+                        network.as_ref().unwrap().pack_and_send_data(&mut player, &block, &network);
+                    }
+                    continue 'game_loop;
+                }
+
+            }
+            if current_level == final_level { break 'game_loop; }
+            player.reset_colliders();
+            block.reset_colliders();
+            current_level += 1;
+            let current_level_file = &format!("level{}.txt", current_level);
+            level = levels::parse_level(current_level_file);
+            // we read in the level from a file and add the necessary colliders and stuff
+            let mut level_has_gate = false;
+            for obj in level.iter() {
+                let new_collider = || {
+                    RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap() * TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap() * TILE_SIZE) as f32)
+                };
+                if obj[0] == "start" {
+                    player.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
+                    player.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
+                    player.respawn();
+                    block.set_start_pos(obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
+                    block.respawn();
+                }
+                if obj[0] == "portalblock" {
+                    player.add_collider(new_collider(), "portalblock");
+                    block.add_collider(new_collider());
+                }
+                if obj[0] == "nonportalblock" {
+                    player.add_collider(new_collider(), "nonportalblock");
+                    block.add_collider(new_collider());
+                }
+                if obj[0] == "portalglass" {
+                    player.add_collider(new_collider(), "portalglass");
+                    block.add_collider(new_collider());
+                }
+                if obj[0] == "gateplate" {
+                    platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1);
+                    level_has_gate = true;
+                }
+            }
+            if !level_has_gate {
+                platecon = PlateController::new(0, 0, 0, 0, 0, false);
+            }
+            player.unstop();
+            level_cleared_time = None;
         }
 
         let keystate: HashSet<Keycode> = event_pump
@@ -181,118 +304,141 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             .filter_map(Keycode::from_scancode)
             .collect();
 
-        move_player(&mut player1, &keystate);
+        move_player(&mut player, &keystate);
+
+        // dash controller
+        if keystate.contains(&Keycode::E) && currently_dashing == 0 && (elapsed_time >= time_of_dash + (6*player.physics.dash_time())) {
+            time_of_dash = elapsed_time;
+            currently_dashing = 1;
+        }
+        if currently_dashing == 1 {
+            first_press += 1;
+            if elapsed_time >= time_of_dash + player.physics.dash_time() {
+                currently_dashing = 0;
+                first_press = 0;
+                player.physics.stop_dash();
+            }
+            else {
+                player.physics.dash(player.physics.speed(), first_press);
+            }
+        }
 
         // Teleport the player
-        player1.portal.teleport(&mut player1.collider, &mut player1.physics);
+        player.portal.teleport(&mut player.collider, &mut player.physics);
 
-        // check to see if player has reached the end of the level
-        if level_cleared == false && player1.collider.is_touching(&door_collider) {
-            level_cleared = true;
-            player1.stop();
-        }
-        if level_cleared {
-            draw_level_cleared_msg(&mut wincan, &level_cleared_msg_sprite);
-            //this is just until we get the level changing logic completed
-            if current_level == final_level { break 'gameloop; }
-            player1.reset_colliders();
-            block.reset_colliders();
-            current_level += 1;
-            // this is what I'm going with until I figure out how
-            // to do "level"+current_level+".txt"
-            let current_level_file = &format!("level{level}.txt", level = current_level);
-            level = levels::parse_level(current_level_file);
-
-            // we read in the next level
-            for obj in level.iter() {
-                if obj[0] == "start" {
-                    player1.physics.set_start_x(obj[1].parse::<i32>().unwrap() as f32);
-                    player1.physics.set_start_y(obj[2].parse::<i32>().unwrap() as f32);
-                    player1.respawn();
-                    block.set_start_pos(&player1, obj[3].parse::<i32>().unwrap() as f32, obj[4].parse::<i32>().unwrap() as f32);
-                    block.respawn(&player1);
+        /*
+       Local Game Input Processed
+        */
+        // *************************************************************************
+        /*
+        Begin Networking
+         */
+        let mut remote_player = None;
+        let network_option = &network;
+        if network.is_some() {
+            let network = network.as_ref().unwrap();
+            if let Err(e) = network.pack_and_send_data(&mut player, &block, network_option) {
+                eprintln!("{}", e);
+            }
+            match network.get_packet_buffer() {
+                Ok(mut buf) => {
+                    let player_data = networking::unpack_player_data(&mut buf).unwrap();
+                    let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+                    let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
+                    let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
+                    remote_player = Some((player_data, portal_data, block_data, wand_data));
                 }
-                if obj[0] == "portalblock" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, "portalblock");
-                    block.add_collider(new_collider);
-                }
-                if obj[0] == "nonportalblock" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, "nonportalblock");
-                    block.add_collider(new_collider);
-                }
-                if obj[0] == "portalglass" {
-                    let new_collider = RectCollider::new(obj[1].parse::<i32>().unwrap() as f32, obj[2].parse::<i32>().unwrap() as f32, (obj[3].parse::<u32>().unwrap()*TILE_SIZE) as f32, (obj[4].parse::<u32>().unwrap()*TILE_SIZE) as f32);
-                    player1.add_collider(new_collider, "portalglass");
-                    block.add_collider(new_collider);
-                }
-                if obj[0] == "gateplate" {
-                    platecon = PlateController::new(obj[1].parse::<i32>().unwrap(), obj[2].parse::<i32>().unwrap(), obj[3].parse::<i32>().unwrap(), obj[4].parse::<i32>().unwrap(), obj[5].parse::<i32>().unwrap(), obj[6].parse::<i32>().unwrap() == 1)
+                Err(e) => {
+                    eprintln!("{}", e);
                 }
             }
-            player1.unstop();
-            level_cleared = false;
+        }
+        /*
+        End Networking
+         */
+        // *************************************************************************************
+        /*
+        Begin Game State Update:
+        Check if level is cleared, kill condition, respawn condition, flip horizontal,
+        and update portals.
+         */
+        let mut remote_player_collider = RectCollider::new(-300.0, -300.0, 69.0, 98.0);
+
+        // kill condition
+        if !player.is_dead() && (player.physics.x() < 0.0 || player.physics.x() > 1280.0 || player.physics.y() < 0.0 || player.physics.y() > 720.0) {
+            player.kill();
         }
 
-        if !player1.is_dead() && (player1.physics.x() < 0.0 || player1.physics.x() > 1280.0 || player1.physics.y() < 0.0 || player1.physics.y() > 720.0) {
-            player1.kill();
+        // respawn condition
+        if player.is_dead() {
+            player.respawn();
         }
 
-        if player1.is_dead() {
-            player1.respawn();
-        }
-
-        player1.update(platecon);
-        block.update(&player1);
+        player.update(platecon);
+        block.update(&player);
         platecon.update_plate(block.collider());
 
         // do we need to flip the player?
-        flip = if level_cleared {
-            flip
-        } else if player1.physics.speed() > 0.0 && flip  {
-            false
-        } else if player1.physics.speed() < 0.0 && !flip {
-            true
-        } else {
-            flip
-        };
+        player.flip_horizontal =
+            if player.physics.speed() > 0.0 && player.flip_horizontal {
+                false
+            } else if player.physics.speed() < 0.0 && !player.flip_horizontal {
+                true
+            } else {
+                player.flip_horizontal
+            };
 
         // create the portals
-        if event_pump.mouse_state().left() {
-            player1.portal.open_portal(0);
-        }
-        if event_pump.mouse_state().right() {
-            player1.portal.open_portal(1);
-        }
-
-        // now that updates are processed, we do networking and then render
-        match network_mode {
-            networking::NetworkingMode::Send => {
-                let socket = get_sending_socket();
-                if let Err(e) = socket.connect(networking::REC_ADDR) {
-                    println!("Failed to connect to {:?}", networking::REC_ADDR);
+        if remote_player.is_some() {
+            let network = network.as_ref().unwrap();
+            match network.mode {
+                networking::Mode::MultiplayerPlayer1 => {
+                    if event_pump.mouse_state().left() {
+                        player.portal.open_portal(0);
+                    }
+                    let remote_portal = remote_player.unwrap().1;
+                    if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
+                        player.portal.portals[1].open(remote_portal.0, remote_portal.1, remote_portal.2);
+                    }
+                },
+                networking::Mode::MultiplayerPlayer2 => {
+                    if event_pump.mouse_state().left() {
+                        player.portal.open_portal(1);
+                    }
+                    let remote_portal = remote_player.unwrap().1;
+                    if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
+                        player.portal.portals[0].open(remote_portal.0, remote_portal.1, remote_portal.2);
+                    }
                 }
-                networking::send_data(&mut player1, &socket, flip);
             }
-            networking::NetworkingMode::Receive => {
-                let mut socket = get_receiving_socket();
-                if let Err(e) = socket.connect(networking::SEND_ADDR) {
-                    println!("Failed to connect to {:?}", networking::SEND_ADDR);
+        } else {
+            if event_pump.mouse_state().left() {
+                if throwing_portal {
+                    player.portal.throw_potion(0, event_pump.mouse_state().x(), event_pump.mouse_state().y());
+                } else {
+                    player.portal.open_portal(0);
                 }
-                let mut buf = networking::get_packet_buffer(&mut socket);
-                let player_pos = networking::get_player_position_and_flip(&mut socket, &mut buf);
-                let p1sprite = texture_creator.load_texture("assets/in_game/player/character/characters-sprites_condensed.png").unwrap();
-                render_mirrored_player(&mut wincan, p1sprite, player_pos, flip)?;
-
-                let portal_pos = networking::get_portal_position_and_flip(&mut socket, &mut buf);
-                let posprite = texture_creator.load_texture("assets/in_game/portal/portal-sprite-sheet.png").unwrap();
-
-                /*for p in &player1.portal.portals {
-                    wincan.copy_ex(&posprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
-                }*/
-                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[0].color()+125, 0, 125, 250), Rect::new(portal_pos.0 as i32, portal_pos.1 as i32, 60, 100), 0.0, None, false, false)?;
-                wincan.copy_ex(&posprite, Rect::new(500*&player1.portal.portals[1].color()+125, 0, 125, 250), Rect::new(portal_pos.2 as i32, portal_pos.3 as i32, 60, 100), 0.0, None, false, false)?;
+            }
+            if event_pump.mouse_state().right() {
+                if throwing_portal {
+                    player.portal.throw_potion(1, event_pump.mouse_state().x(), event_pump.mouse_state().y());
+                } else {
+                    player.portal.open_portal(1);
+                }
+            }
+        }
+        if remote_player.is_some() {
+            let remote_player = remote_player.unwrap().0;
+            remote_player_collider = RectCollider::new(remote_player.0, remote_player.1, 69.0, 98.0);
+            if level_cleared_time.is_none() && player.collider.is_touching(&door_collider) && remote_player_collider.is_touching(&door_collider) {
+                level_cleared_time = Some(Instant::now());
+                player.stop();
+            }
+        } else {
+            // check to see if player has reached the end of the level
+            if level_cleared_time.is_none() && player.collider.is_touching(&door_collider) {
+                level_cleared_time = Some(Instant::now());
+                player.stop();
             }
         }
         /*
@@ -303,22 +449,31 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         /*
         Begin rendering current frame.
          */
-        wincan.set_draw_color(BACKGROUND);
-        wincan.clear();
+
         wincan.copy(&castle_bg, None, None).ok();
 
-        draw_level_cleared_door(&mut wincan, &door_sheet, &player1, &door_collider);
+        draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider, &network, &remote_player_collider);
         // draw_collision_boxes(&mut wincan, &player1);
         // draw the surfaces
         for obj in level.iter() {
+            let mut draw_surface = |surface_texture: &Texture| {
+                draw_surface(
+                    &mut wincan,
+                    surface_texture,
+                    obj[1].parse().unwrap(),
+                    obj[2].parse().unwrap(),
+                    obj[3].parse().unwrap(),
+                    obj[4].parse().unwrap()
+                );
+            };
             if obj[0] == "portalblock" {
-                draw_surface(&mut wincan, &portal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+                draw_surface(&portal_surface);
             }
             if obj[0] == "nonportalblock" {
-                draw_surface(&mut wincan, &nonportal_surface, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+                draw_surface(&nonportal_surface);
             }
             if obj[0] == "portalglass" {
-                draw_surface(&mut wincan, &portal_glass, obj[1].parse().unwrap(), obj[2].parse().unwrap(), obj[3].parse().unwrap(), obj[4].parse().unwrap());
+                draw_surface(&portal_glass);
             }
             if obj[0] == "gateplate" {
                 draw_plate(&mut wincan, &pressure_plate, platecon);
@@ -326,17 +481,96 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             }
         }
 
-        draw_block(&mut wincan, &block, &block_texture);
-        render_player(&p1sprite, &mut wincan, &mut player1, flip)?;
-
-        for p in &player1.portal.portals {
-            wincan.copy_ex(&portalsprite, Rect::new(500*p.color()+125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false)?;
+        match remote_player {
+            None => {
+                draw_block(&mut wincan, &block, &block_texture);
+            },
+            Some(_) => {
+                let block_data = remote_player.unwrap().2;
+                wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
+                wincan.copy(&block_texture, None, Rect::new(block_data.0, block_data.1, TILE_SIZE / 2, TILE_SIZE / 2)).ok();
+            }
         }
 
-        wincan.copy_ex(if player1.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player1.physics.x() as i32 + player1.portal.wand_x(), player1.physics.y() as i32 + player1.portal.wand_y(), 100, 20), player1.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+        render_player(&p1sprite, &mut wincan, &mut player, &network)?;
+        match remote_player {
+            Some(_) => {
+                let player_data = remote_player.unwrap().0;
+                let player_pos: (f32, f32) = (player_data.0, player_data.1);
+                let flip: bool = player_data.2;
+                let anim_rect = Rect::new(
+                    player_data.3,
+                    player_data.4,
+                    player_data.5,
+                    player_data.6
+                );
+                render_remote_player(&mut wincan, &p1sprite, player_pos, flip, anim_rect)?;
+            }
+            None => {}
+        }
 
-        //draw a custom cursor
-        wincan.copy(&cursor, None, Rect::new(event_pump.mouse_state().x()-27, event_pump.mouse_state().y()-38, 53, 75)).ok();
+        let mut render_portal = |p: &Portal| {
+            wincan.copy_ex(&portalsprite, Rect::new(500 * p.color() + 125, 0, 125, 250), Rect::new(p.x() as i32, p.y() as i32, 60, 100), p.rotation().into(), None, false, false).unwrap();
+        };
+        // render portals
+        for p in &player.portal.portals {
+            render_portal(p);
+        }
+
+        //Wand Rendering
+        match remote_player {
+            Some(_) => {
+                let wand_data = remote_player.unwrap().3;
+                let player_data = remote_player.unwrap().0;
+                let network = network.as_ref().unwrap();
+                match network.mode {
+                    networking::Mode::MultiplayerPlayer1 => {
+                        wincan.copy_ex(&bluewand , None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+                        wincan.copy_ex(&orangewand, None, Rect::new(player_data.0 as i32 + wand_data.0, player_data.1 as i32 + wand_data.1, 100, 20), wand_data.2 as f64, None, false, false)?;
+                    }
+                    networking::Mode::MultiplayerPlayer2 => {
+                        wincan.copy_ex(&orangewand , None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+                        wincan.copy_ex(&bluewand, None, Rect::new(player_data.0 as i32 + wand_data.0, player_data.1 as i32 + wand_data.1, 100, 20), wand_data.2 as f64, None, false, false)?;
+                    }
+                }
+            }
+            None => { /*wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;*/ }
+        }
+
+        // render potions as they fly through the air
+        let mut potion_state = player.portal.get_potion_state();
+        if potion_state.0.is_some() {
+            let p0state = potion_state.0.unwrap();
+            let p0x = p0state.0;
+            let p0y = p0state.1;
+            let p0r = p0state.2;
+            wincan.copy_ex(&potionsprite, Rect::new(417, 0, 417, 417), Rect::new((p0x-12.5) as i32, (p0y-12.5) as i32, 25, 25), p0r, None, false, false)?;
+        }
+        if potion_state.1.is_some() {
+            let p1state = potion_state.1.unwrap();
+            let p1x = p1state.0;
+            let p1y = p1state.1;
+            let p1r = p1state.2;
+            wincan.copy_ex(&potionsprite, Rect::new(0, 0, 417, 417), Rect::new((p1x-12.5) as i32, (p1y-12.5) as i32, 25, 25), p1r, None, false, false)?;
+        }
+
+        // wand and potions
+        if throwing_portal {
+            wincan.copy(&potionsprite, Rect::new((1-player.portal.last_portal()) as i32 *417, 0, 417, 417), Rect::new(player.physics.x() as i32 + player.portal.potion_x(), player.physics.y() as i32 + player.portal.potion_y(), 25, 25))?;
+        } else {
+            wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
+        }
+        // the pause screen
+        if paused {
+            mouse.show_cursor(true);
+            player.stop();
+            wincan.copy(&instructions, None, Rect::new(240, 60, 800, 600))?;
+        } else {
+            player.unstop();
+            mouse.show_cursor(false);
+            //draw a custom cursor
+            wincan.copy(&cursor, None, Rect::new(event_pump.mouse_state().x() - 27, event_pump.mouse_state().y() - 38, 53, 75)).ok();
+        }
 
         //draw to the screen
         wincan.present();
@@ -344,20 +578,25 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         End rendering current frame.
          */
 
-        //lock the frame rate
-        thread::sleep(Duration::from_millis(1000/ FRAME_RATE));
-    }
+        let duration_to_sleep = FRAME_TIME.checked_sub(tick.elapsed());
+        if duration_to_sleep.is_some() {
+            // println!("elapsed time: {:?}\nduration should sleep: {:?}", tick.elapsed(), duration);
+            thread::sleep(duration_to_sleep.unwrap());
+        }
+    } // end game_loop
 
+    credits::show_credits(wincan, event_pump);
     Ok(())
 }
 
-fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, flip: bool) -> Result<(), String>{
-    wincan.copy_ex(&texture, player1.anim.next_anim(), Rect::new(player1.physics.x() as i32, player1.physics.y() as i32, 69, 98), 0.0, None, flip, false)
+fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, network: &Option<Network>) -> Result<(), String>{
+    let pos_rect = player1.physics.position_rect();
+    let pos_rect = Rect::new(pos_rect.0, pos_rect.1, pos_rect.2, pos_rect.3);
+    wincan.copy_ex(&texture, player1.anim.next_anim(network), pos_rect, 0.0, None, player1.flip_horizontal, false)
 }
 
-fn render_mirrored_player(wincan: &mut WindowCanvas, player_sprite: Texture, player_pos: (f32, f32), flip: bool) -> Result<(), String> {
-    let player_rect = Rect::new(0, 2*98, 69, 98);
-    wincan.copy_ex(&player_sprite, player_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
+fn render_remote_player(wincan: &mut WindowCanvas, player_sprite: &Texture, player_pos: (f32, f32), flip: bool, anim_rect: Rect) -> Result<(), String> {
+    wincan.copy_ex(player_sprite, anim_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
 }
 
 fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
@@ -370,24 +609,11 @@ fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
     if keystate.contains(&Keycode::W) || keystate.contains(&Keycode::Space) {
         player.physics.jump();
     }
-    if keystate.contains(&Keycode::LShift) {
-        player.portal.close_all();
-    }
 }
 
 fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController, sprite: &Texture) {
     wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
     wincan.copy(sprite, None, Rect::new(block.x() as i32, block.y() as i32, TILE_SIZE/2, TILE_SIZE/2)).ok();
-}
-
-fn draw_stone_floor(wincan: &mut WindowCanvas, stone_sprite: &Texture) {
-    let mut i = 0;
-    while i < 130 {
-        let src = Rect::new(((i % 4) * TILE_SIZE) as i32, 0, TILE_SIZE, TILE_SIZE);
-        let pos = Rect::new((i * 10) as i32, (720 - TILE_SIZE) as i32, TILE_SIZE, TILE_SIZE);
-        wincan.copy(&stone_sprite, src, pos).ok();
-        i += 1;
-    }
 }
 
 fn draw_surface(wincan: &mut WindowCanvas, sprite: &Texture, x: i32, y: i32, width: i32, height: i32) {
@@ -428,21 +654,25 @@ fn draw_gate(wincan: &mut WindowCanvas, sprite: &Texture, platecon: PlateControl
 }
 
 
-fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player, door_collider: &RectCollider) {
+fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player, door_collider: &RectCollider, network: &Option<Network>, remote_collider: &RectCollider) {
     let pos = Rect::new((1280 - DOORW) as i32, (720 - 64 - DOORH) as i32, DOORW, DOORH);
     let src: Rect;
-    if player.collider.is_touching(door_collider) {
-        // get open door
-        src = Rect::new(DOORW as i32, 0, DOORW, DOORH);
+    if network.is_some() {
+        if player.collider.is_touching(door_collider) || remote_collider.is_touching(door_collider){
+            // get open door
+            src = Rect::new(DOORW as i32, 0, DOORW, DOORH);
+        } else {
+            // get closed door
+            src = Rect::new(0, 0, DOORW, DOORH);
+        }
     } else {
-        // get closed door
-        src = Rect::new(0, 0, DOORW, DOORH);
+        if player.collider.is_touching(door_collider) {
+            // get open door
+            src = Rect::new(DOORW as i32, 0, DOORW, DOORH);
+        } else {
+            // get closed door
+            src = Rect::new(0, 0, DOORW, DOORH);
+        }
     }
     wincan.copy(&door_sheet, src, pos).ok();
-}
-
-fn draw_level_cleared_msg(wincan: &mut WindowCanvas, level_cleared_msg_sprite: &Texture) {
-    let src = Rect::new(0, 0, 1280, 720);
-    let pos =  Rect::new(0, 0, 1280, 720);
-    wincan.copy(&level_cleared_msg_sprite, src, pos).ok();
 }
