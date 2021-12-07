@@ -221,10 +221,10 @@ impl PhysicsController {
 
     //jump: if we have jumps left, give ourselves a boost upwards. this is so we can support multiple jumps if we need
     pub fn jump(&mut self) {
-        // the first jump must take place on the ground
-        if self.jumps_used == 0 && !self.is_grounded { return; }
+        // if we have one jump, we have to use it on the ground
+        if self.jumps_used == 0 && self.jumps_used+1 == self.max_jumps && !self.is_grounded { return; }
         // the time comparison here is to prevent jumps from occurring on successive frames, which would be frustrating to players
-        if self.last_jump_time+Duration::from_millis(500) < SystemTime::now() && self.jumps_used < self.max_jumps {
+        if self.last_jump_time+Duration::from_millis(250) < SystemTime::now() && self.jumps_used < self.max_jumps {
             self.jumps_used += 1;
             self.fall_speed = -self.jump_speed;
             self.last_jump_time = SystemTime::now();
