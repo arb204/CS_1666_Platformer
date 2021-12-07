@@ -186,6 +186,35 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => break 'game_loop,
+                Event::KeyDown { keycode: Some(Keycode::S), .. } =>
+                {
+                    if block.carried {
+                        block.put_down();
+                    } else if player.collider.is_touching(&block.collider()) {
+                        block.picked_up(&player);
+                    }
+                },
+                Event::KeyDown { keycode: Some(Keycode::R), .. } =>
+                {
+                    //restart level
+                    player.respawn();
+                    player.portal.close_all();
+                    block.respawn();
+                },
+                Event::KeyDown { keycode: Some(Keycode::P), .. } =>
+                {
+                    //pause/unpause game
+                    if last_pause_time+Duration::from_millis(500) < SystemTime::now() {
+                        paused = !paused;
+                        last_pause_time = SystemTime::now();
+                    }
+                },
+                Event::KeyDown { keycode: Some(Keycode::LShift), .. } => {
+                    player.portal.close_all();
+                }
+                Event::KeyDown { keycode: Some(Keycode::LAlt), .. } => {
+                        throwing_portal = !throwing_portal;
+                }
                 _ => {},
             }
         }
@@ -200,6 +229,9 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     wincan.clear();
                     wincan.copy(&loading_screen, *source, *destination);
                     wincan.present();
+                    if network.is_some() {
+                        network.as_ref().unwrap().pack_and_send_data(&mut player, &block, &network);
+                    }
                     continue 'game_loop;
                 }
 
@@ -247,50 +279,13 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             level_cleared_time = None;
         }
 
-        /*
-        Process input
-         */
         let keystate: HashSet<Keycode> = event_pump
             .keyboard_state()
             .pressed_scancodes()
             .filter_map(Keycode::from_scancode)
             .collect();
 
-        if keystate.contains(&Keycode::A) {
-            player.physics.accelerate_left();
-        }
-        if keystate.contains(&Keycode::D) {
-            player.physics.accelerate_right();
-        }
-        if keystate.contains(&Keycode::W) || keystate.contains(&Keycode::Space) {
-            player.physics.jump();
-        }
-        if keystate.contains(&Keycode::S) {
-            if block.carried {
-                block.put_down();
-            } else if player.collider.is_touching(&block.collider()) {
-                block.picked_up(&player);
-            }
-        }
-        if keystate.contains(&Keycode::R) {
-            //restart level
-            player.respawn();
-            player.portal.close_all();
-            block.respawn();
-        }
-        if keystate.contains(&Keycode::P) {
-            //pause/unpause game
-            if last_pause_time+Duration::from_millis(500) < SystemTime::now() {
-                paused = !paused;
-                last_pause_time = SystemTime::now();
-            }
-        }
-        if keystate.contains(&Keycode::LShift) {
-            player.portal.close_all();
-        }
-        if keystate.contains(&Keycode::LAlt) {
-            throwing_portal = !throwing_portal;
-        }
+        move_player(&mut player, &keystate);
 
         // Teleport the player
         player.portal.teleport(&mut player.collider, &mut player.physics);
@@ -413,6 +408,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         /*
         End game state update.
          */
+
         // **********************************************************************
         /*
         Begin rendering current frame.
@@ -565,6 +561,18 @@ fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Pla
 
 fn render_remote_player(wincan: &mut WindowCanvas, player_sprite: &Texture, player_pos: (f32, f32), flip: bool, anim_rect: Rect) -> Result<(), String> {
     wincan.copy_ex(player_sprite, anim_rect, Rect::new(player_pos.0 as i32, player_pos.1 as i32, 69, 98), 0.0, None, flip, false)
+}
+
+fn move_player(player: &mut Player, keystate: &HashSet<Keycode>) {
+    if keystate.contains(&Keycode::A) {
+        player.physics.accelerate_left();
+    }
+    if keystate.contains(&Keycode::D) {
+        player.physics.accelerate_right();
+    }
+    if keystate.contains(&Keycode::W) || keystate.contains(&Keycode::Space) {
+        player.physics.jump();
+    }
 }
 
 fn draw_block(wincan: &mut WindowCanvas, block: &ObjectController, sprite: &Texture) {
