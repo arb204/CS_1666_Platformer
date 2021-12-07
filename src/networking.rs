@@ -40,21 +40,21 @@ impl Connection {
             Mode::MultiplayerPlayer1 => {
                 let send_socket = connected_socket (
                     SocketAddr::new(p1_address, 34254),
-                    SocketAddr::new(p2_address, 34254),
+                    SocketAddr::new(p2_address, 34256),
                 );
                 let receive_socket = connected_socket(
                     SocketAddr::new(p1_address, 34255),
-                    SocketAddr::new(p2_address, 34255)
+                    SocketAddr::new(p2_address, 34257)
                 );
                 Connection { send_socket, receive_socket }
             }
             Mode::MultiplayerPlayer2 => {
                 let send_socket = connected_socket (
-                    SocketAddr::new(p2_address, 34255),
+                    SocketAddr::new(p2_address, 34257),
                     SocketAddr::new(p1_address, 34255),
                 );
                 let receive_socket = connected_socket(
-                    SocketAddr::new(p2_address, 34254),
+                    SocketAddr::new(p2_address, 34256),
                     SocketAddr::new(p1_address, 34254)
                 );
                 Connection { send_socket, receive_socket }
