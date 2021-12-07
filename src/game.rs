@@ -96,7 +96,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
     // Controllers and portals
-    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 40.0, vec!());
+    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 2, 0.2, 1.0, 40.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
     let p1portalcon = PortalController::new(-10, 60, 20, 65, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(), vec!(), vec!());
@@ -534,7 +534,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     }
                 }
             }
-            None => { wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?; }
+            None => { /*wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;*/ }
         }
 
         // render potions as they fly through the air
