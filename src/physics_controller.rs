@@ -11,7 +11,7 @@ pub struct PhysicsController {
     y: f32,
     speed: f32,
     max_speed: f32,
-    acceleration: f32,
+    pub acceleration: f32,
     jump_speed: f32,
     jumps_used: i8,
     last_jump_time: SystemTime,
@@ -23,11 +23,14 @@ pub struct PhysicsController {
     max_fall_speed: f32,
     is_grounded: bool,
     can_move: bool,
+    dash_time: u128,
+    pre_dash_speed: f32,
+    curr_direction: i8, // 1 if facing right, 0 if facing left
     colliders: Vec<RectCollider>
 }
 
 impl PhysicsController {
-    pub fn new(_x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32, _colliders: Vec<RectCollider>)
+    pub fn new(_x: f32, _y:f32, _maxspeed: f32, _acceleration: f32, _jumpspeed:f32, _maxjumps: i8, _stopspeed: f32, _gravity: f32, _maxfallspeed: f32,  _colliders: Vec<RectCollider>)
         -> PhysicsController
     {
         PhysicsController {
@@ -49,6 +52,9 @@ impl PhysicsController {
             max_fall_speed: _maxfallspeed,
             is_grounded: false,
             can_move: true,
+            dash_time: 100,
+            pre_dash_speed: 0.0,
+            curr_direction: 1,
             colliders: _colliders
         }
     }
@@ -61,6 +67,7 @@ impl PhysicsController {
     pub fn position_rect(&self) -> (i32, i32, u32, u32) { (self.x as i32, self.y as i32, 69, 98)}
     pub fn speed(&self) -> f32 { self.speed }
     pub fn fall_speed(&self) -> f32 { self.fall_speed }
+    pub fn dash_time(&self) -> u128 { self.dash_time }
     pub fn is_grounded(&self) -> bool { self.is_grounded }
     pub fn total_speed(&self) -> f32 {
         self.speed.powf(2.0) + self.fall_speed.powf(2.0).powf(0.5)
@@ -108,24 +115,26 @@ impl PhysicsController {
 
     // accelerate_left: accelerates the character to the left
     pub fn accelerate_left(&mut self) {
+        self.curr_direction = 0;
         if self.speed > -self.max_speed {
             self.speed -= self.acceleration;
         }
         if self.speed < -self.max_speed {
             //self.speed = -self.max_speed;
-            //self.speed += self.acceleration;
+            self.speed += self.acceleration;
         }
     }
 
     // accelerate_right: accelerates the character to the right
     pub fn accelerate_right(&mut self) {
+        self.curr_direction = 1;
         if self.speed < self.max_speed {
             //self.speed = self.acceleration;
             self.speed += self.acceleration;
         }
         if self.speed > self.max_speed {
             //self.speed = self.max_speed;
-            //self.speed -= self.acceleration;
+            self.speed -= self.acceleration;
         }
     }
 
@@ -222,6 +231,27 @@ impl PhysicsController {
             self.is_grounded = false;
         }
     }
+
+    // gives the player the ability to dash in a derection depending on the acceleration of the player
+    pub fn dash(&mut self, speed: f32, first_press: i8) {
+        self.gravity = 0.0;
+        self.fall_speed = 0.0;
+        if(first_press == 1) {
+            self.pre_dash_speed = speed;
+        }
+
+        if(self.curr_direction == 1) {
+            self.speed = 32.0;
+        }
+        else if(self.curr_direction == 0) {
+            self.speed = -32.0;
+        }
+    }
+
+    pub fn stop_dash(&mut self) {
+        self.speed = self.pre_dash_speed;
+        self.gravity = 1.0;
+    }
 }
 
 impl Clone for PhysicsController {
@@ -245,6 +275,9 @@ impl Clone for PhysicsController {
             max_fall_speed: self.max_fall_speed,
             is_grounded: self.is_grounded,
             can_move: self.can_move,
+            dash_time: self.dash_time,
+            pre_dash_speed: self.pre_dash_speed,
+            curr_direction: self.curr_direction,
             colliders: self.colliders()
         }
     }
