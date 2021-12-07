@@ -98,7 +98,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let block_collider = RectCollider::new(200.0, (720-(3*TILE_SIZE as i32)/2) as f32, (TILE_SIZE/2) as f32, (TILE_SIZE/2) as f32);
 
     // Controllers and portals
-    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 1, 0.2, 1.0, 40.0, vec!());
+    let p1physcon = PhysicsController::new(75.0, 500.0, 8.0, 0.7, 20.0, 2, 0.2, 1.0, 40.0, vec!());
     let blue_portal = Portal::new(0);
     let orange_portal = Portal::new(1);
     let p1portalcon = PortalController::new(-10, 60, 20, 65, p1physcon.clone(), vec!(blue_portal, orange_portal), vec!(), vec!(), vec!());
@@ -117,7 +117,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     let jump = Anim::new(vec![3], vec![1], Condition::new("fallspeed < 0".to_string(), 3, p1physcon.clone()));
     let fall = Anim::new(vec![4], vec![1], Condition::new("fallspeed > 1".to_string(), 4, p1physcon.clone()));
 
-    
+
     let p1anim = AnimController::new(3, 69, 98, vec![idle, run, jump, fall]);
 
     // Entities
@@ -135,6 +135,14 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
     let mut paused = true;
     let mut last_pause_time = SystemTime::now();
+
+    // data to help get the time elapsed and dash time
+    let mut first_loop = 0;
+    let mut start_time = 0;
+    let mut elapsed_time = 0;
+    let mut time_of_dash = 0; // the time that 'E' is pressed
+    let mut currently_dashing = 0; // 0 is not dashing, 1 if dashing
+    let mut first_press: i8 = 0;
 
     let mut level = levels::parse_level("level0.txt");
     // we read in the level from a file and add the necessary colliders and stuff
@@ -208,6 +216,17 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     'game_loop: loop {
         // Timer tick
         let tick = Instant::now();
+        // get the elapsed time
+        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(n) => {
+                if first_loop == 0 {
+                    start_time = n.as_millis();
+                    first_loop += 1;
+                }
+                elapsed_time = n.as_millis() - start_time;
+            }
+            Err(_) => panic!("SystemTime before UNIX EPOCH!"),
+        }
         /*
         Process local game input
          */
@@ -311,6 +330,23 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             .collect();
 
         move_player(&mut player, &keystate);
+
+        // dash controller
+        if keystate.contains(&Keycode::E) && currently_dashing == 0 && (elapsed_time >= time_of_dash + (6*player.physics.dash_time())) {
+            time_of_dash = elapsed_time;
+            currently_dashing = 1;
+        }
+        if currently_dashing == 1 {
+            first_press += 1;
+            if elapsed_time >= time_of_dash + player.physics.dash_time() {
+                currently_dashing = 0;
+                first_press = 0;
+                player.physics.stop_dash();
+            }
+            else {
+                player.physics.dash(player.physics.speed(), first_press);
+            }
+        }
 
         // Teleport the player
         player.portal.teleport(&mut player.collider, &mut player.physics);
@@ -532,7 +568,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     }
                 }
             }
-            None => { wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?; }
+            None => { /*wincan.copy_ex(if player.portal.last_portal() == 0 { &bluewand } else { &orangewand }, None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;*/ }
         }
 
         // render potions as they fly through the air
