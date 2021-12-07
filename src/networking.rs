@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::player::Player;
 use crate::object_controller::ObjectController;
 
-const PACKET_SIZE: usize = 64;
+pub const PACKET_SIZE: usize = 64;
 const DEBUG: bool = false;
 
 #[derive(Copy, Clone)]

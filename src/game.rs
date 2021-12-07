@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::mpsc::{Sender, Receiver, self};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 use std::convert::TryInto;
@@ -169,6 +170,24 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         platecon = PlateController::new(0, 0, 0, 0, 0, false);
     }
 
+    let (tx, rx) = mpsc::channel();
+    let receiving_data = move |network: &Network| {
+            loop {
+                let buf = network.get_packet_buffer();
+                tx.send(buf).unwrap();
+            }
+        };
+    
+    let networkmode;
+    if(network.is_some()) {
+        let network = network.as_ref().unwrap();
+        networkmode = network.mode;
+        let network_thread = thread::spawn(receiving_data(network));
+    }
+
+   
+    
+
     /*
     Game state setup complete.
      */
@@ -304,13 +323,20 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             if let Err(e) = network.pack_and_send_data(&mut player, &block, network_option) {
                 eprintln!("{}", e);
             }
-            match network.get_packet_buffer() {
-                Ok(mut buf) => {
-                    let player_data = networking::unpack_player_data(&mut buf).unwrap();
-                    let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
-                    let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
-                    let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-                    remote_player = Some((player_data, portal_data, block_data, wand_data));
+            match rx.recv() {
+                Ok(network_result) =>{
+                    match network_result {
+                        Ok(mut buf) => {
+                        let player_data = networking::unpack_player_data(&mut buf).unwrap();
+                        let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+                        let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
+                        let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
+                        remote_player = Some((player_data, portal_data, block_data, wand_data));
+                        }
+                        Err(e) => {
+                            eprintln!("{}", e);
+                        }
+                    }
                 }
                 Err(e) => {
                     eprintln!("{}", e);
