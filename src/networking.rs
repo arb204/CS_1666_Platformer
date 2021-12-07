@@ -1,4 +1,4 @@
-use std::net::{SocketAddr, UdpSocket};
+use std::net::{IpAddr, SocketAddr, UdpSocket};
 use std::str::FromStr;
 use crate::player::Player;
 use crate::object_controller::ObjectController;
@@ -12,127 +12,143 @@ pub enum Mode {
     MultiplayerPlayer2,
 }
 
-pub struct Network {
-    socket: UdpSocket,
+pub struct Multiplayer {
     pub mode: Mode,
 }
 
-impl Network {
-    pub fn new(mode: Mode) -> Network {
+pub struct Connection {
+    pub send_socket: UdpSocket,
+    pub receive_socket: UdpSocket,
+}
+
+impl Connection {
+    pub fn new(mode: Mode) -> Connection {
         /*
         if on windows, use the PowerShell command
         Get-NetIPAddress -InterfaceAlias Wi-Fi | select IPAddress
         on p1's machine and p2's machine. Then change the addresses below
         accordingly but don't change the port numbers (the numbers after the ':')
         */
-        let p1_address = SocketAddr::from_str("127.0.0.1:34254").unwrap();
-        let p2_address = SocketAddr::from_str("127.0.0.1:34255").unwrap();
-        let new_network = |local, remote| {
+        let p1_address = IpAddr::from_str("127.0.0.1").unwrap();
+        let p2_address = IpAddr::from_str("127.0.0.1").unwrap();
+        let connected_socket = |local, remote| {
             let socket = UdpSocket::bind(local).expect("couldn't bind to local");
             socket.connect(remote).expect("couldn't connect to remote");
-            Network { socket, mode }
+            socket
         };
         match mode {
             Mode::MultiplayerPlayer1 => {
-                let local = p1_address;
-                let remote = p2_address;
-                new_network(local, remote)
+                let send_socket = connected_socket (
+                    SocketAddr::new(p1_address, 34254),
+                    SocketAddr::new(p2_address, 34254),
+                );
+                let receive_socket = connected_socket(
+                    SocketAddr::new(p1_address, 34255),
+                    SocketAddr::new(p2_address, 34255)
+                );
+                Connection { send_socket, receive_socket }
             }
             Mode::MultiplayerPlayer2 => {
-                let local = p2_address;
-                let remote = p1_address;
-                new_network(local, remote)
+                let send_socket = connected_socket (
+                    SocketAddr::new(p2_address, 34255),
+                    SocketAddr::new(p1_address, 34255),
+                );
+                let receive_socket = connected_socket(
+                    SocketAddr::new(p2_address, 34254),
+                    SocketAddr::new(p1_address, 34254)
+                );
+                Connection { send_socket, receive_socket }
             }
         }
     }
+}
 
-    pub fn get_packet_buffer(&self) -> Result<[u8; PACKET_SIZE], String> {
-        let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
-        let receive_result = self.socket.recv_from(&mut buf);
-        return match receive_result {
-            Ok(_) => {
-                let (amt, src) = receive_result.unwrap();
-                if amt != PACKET_SIZE {
-                    eprintln!("Expected {} bytes, Received {} bytes", PACKET_SIZE, amt);
-                }
-                let peer_addr = self.socket.peer_addr().expect("not connected to remote");
-                assert_eq!(src, peer_addr, "Expected to receive data from {}, Instead received from {}",
-                           peer_addr, src);
-                Ok(buf)
-            }
-            Err(_) => {
-                Err(String::from("Didn't receive data"))
-            }
+impl Multiplayer {
+    pub fn new(mode: Mode) -> Multiplayer {
+        Multiplayer { mode }
+    }
+}
+
+pub fn pack_data(player: &mut Player, block: &ObjectController, multiplayer: &Option<Multiplayer>,
+    ) -> Vec<u8> {
+
+    //Player Information
+    let player_xpos = player.physics.x().to_le_bytes();
+    let player_ypos = player.physics.y().to_le_bytes();
+    let flip = player.flip_horizontal as u32;
+    let flip = flip.to_le_bytes();
+    let anim = player.anim.next_anim(multiplayer);
+    let ax = anim.x().to_le_bytes();
+    let ay = anim.y().to_le_bytes();
+    let aw = anim.width().to_le_bytes();
+    let ah = anim.height().to_le_bytes();
+
+    //Portal Information
+    let portal_x: [u8; 4];
+    let portal_y: [u8; 4];
+    let portal_rotation: [u8; 4];
+
+    match multiplayer.as_ref().unwrap().mode {
+        Mode::MultiplayerPlayer1 => {
+            portal_x = player.portal.portals[0].x().to_le_bytes();
+            portal_y = player.portal.portals[0].y().to_le_bytes();
+            portal_rotation = player.portal.portals[0].rotation().to_le_bytes();
+        },
+        Mode::MultiplayerPlayer2 => {
+            portal_x = player.portal.portals[1].x().to_le_bytes();
+            portal_y = player.portal.portals[1].y().to_le_bytes();
+            portal_rotation = player.portal.portals[1].rotation().to_le_bytes();
         }
     }
 
-    pub fn pack_and_send_data(
-        &self, player: &mut Player,
-        block: &ObjectController,
-        network: &Option<Network>,
-    ) -> std::io::Result<usize> {
+    //Block Information
+    let block_x: [u8; 4] = block.x().to_le_bytes();
+    let block_y: [u8; 4] = block.y().to_le_bytes();
+    let carried = block.carried as u32;
+    let block_carried: [u8; 4] = carried.to_le_bytes();
 
-        //Player Information
-        let player_xpos = player.physics.x().to_le_bytes();
-        let player_ypos = player.physics.y().to_le_bytes();
-        let flip = player.flip_horizontal as u32;
-        let flip = flip.to_le_bytes();
-        let anim = player.anim.next_anim(network);
-        let ax = anim.x().to_le_bytes();
-        let ay = anim.y().to_le_bytes();
-        let aw = anim.width().to_le_bytes();
-        let ah = anim.height().to_le_bytes();
+    //Wand Information
+    let wand_x: [u8; 4] = player.portal.wand_x().to_le_bytes();
+    let wand_y: [u8; 4] = player.portal.wand_y().to_le_bytes();
+    let wand_rotation: [u8; 4] = player.portal.rotation().to_le_bytes();
 
-        //Portal Information
-        let portal_x: [u8; 4];
-        let portal_y: [u8; 4];
-        let portal_rotation: [u8; 4];
+    let buf = [
+        player_xpos,
+        player_ypos,
+        flip,
+        portal_x,
+        portal_y,
+        portal_rotation,
+        ax,
+        ay,
+        aw,
+        ah,
+        block_x,
+        block_y,
+        block_carried,
+        wand_x,
+        wand_y,
+        wand_rotation,
+    ].concat();
+    if DEBUG { println!("{:?}", &buf); }
 
-        match self.mode {
-            Mode::MultiplayerPlayer1 => {
-                portal_x = player.portal.portals[0].x().to_le_bytes();
-                portal_y = player.portal.portals[0].y().to_le_bytes();
-                portal_rotation = player.portal.portals[0].rotation().to_le_bytes();
-            },
-            Mode::MultiplayerPlayer2 => {
-                portal_x = player.portal.portals[1].x().to_le_bytes();
-                portal_y = player.portal.portals[1].y().to_le_bytes();
-                portal_rotation = player.portal.portals[1].rotation().to_le_bytes();
+    buf
+}
+
+pub fn recv_packet_buffer(socket: UdpSocket) -> Result<[u8; PACKET_SIZE], String> {
+    let mut buf: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
+    let receive_result = socket.recv(&mut buf);
+    return match receive_result {
+        Ok(_) => {
+            let amt = receive_result.unwrap();
+            if amt != PACKET_SIZE {
+                eprintln!("Expected {} bytes, Received {} bytes", PACKET_SIZE, amt);
             }
+            Ok(buf)
         }
-
-        //Block Information
-        let block_x: [u8; 4] = block.x().to_le_bytes();
-        let block_y: [u8; 4] = block.y().to_le_bytes();
-        let carried = block.carried as u32;
-        let block_carried: [u8; 4] = carried.to_le_bytes();
-
-        //Wand Information
-        let wand_x: [u8; 4] = player.portal.wand_x().to_le_bytes();
-        let wand_y: [u8; 4] = player.portal.wand_y().to_le_bytes();
-        let wand_rotation: [u8; 4] = player.portal.rotation().to_le_bytes();
-
-
-        let buf = [
-            player_xpos,
-            player_ypos,
-            flip,
-            portal_x,
-            portal_y,
-            portal_rotation,
-            ax,
-            ay,
-            aw,
-            ah,
-            block_x,
-            block_y,
-            block_carried,
-            wand_x,
-            wand_y,
-            wand_rotation,
-        ].concat();
-        if DEBUG { println!("{:?}", &buf); }
-        return self.socket.send(&buf);
+        Err(_) => {
+            Err(String::from("Didn't receive data"))
+        }
     }
 }
 

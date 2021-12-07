@@ -1,8 +1,9 @@
 use std::collections::HashSet;
-use std::sync::mpsc::{Sender, Receiver, self};
+use std::sync::mpsc::{self, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 use std::convert::TryInto;
+use std::net::UdpSocket;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -12,7 +13,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 
-use crate::{levels, networking, rect_collider};
+use crate::{levels, networking};
 use crate::animation_controller::Anim;
 use crate::animation_controller::AnimController;
 use crate::animation_controller::Condition;
@@ -23,7 +24,7 @@ use crate::rect_collider::RectCollider;
 use crate::object_controller::ObjectController;
 use crate::plate_controller::PlateController;
 use crate::credits;
-use crate::networking::Network;
+use crate::networking::Multiplayer;
 
 const TILE_SIZE: u32 = 64;
 // const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -35,7 +36,7 @@ const FRAME_RATE: u64 = 60;
 const FRAME_TIME: Duration = Duration::from_millis(1000 / FRAME_RATE);
 
 pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
-                  mouse: MouseUtil, network: Option<Network>)
+                  mouse: MouseUtil, multiplayer: Option<Multiplayer>)
                   -> Result<(), String> {
     /*
     Renderer setup begins here.
@@ -170,24 +171,32 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         platecon = PlateController::new(0, 0, 0, 0, 0, false);
     }
 
+    /*
+    Networking setup
+     */
+    let mut remote_player = None;
+    let mut send_socket: Option<UdpSocket> = None;
     let (tx, rx) = mpsc::channel();
-    let receiving_data = move |network: &Network| {
+    // let mut network_buffer: [u8; networking::PACKET_SIZE] = [0; networking::PACKET_SIZE];
+    // let mut network_buffer = Arc::new(Mutex::new(network_buffer));
+    if multiplayer.is_some() {
+        let connection = networking::Connection::new(multiplayer.as_ref().unwrap().mode);
+        send_socket = Some(connection.send_socket);
+        let receive_socket = connection.receive_socket;
+        thread::spawn ( move || {
+            let mut buf: [u8; networking::PACKET_SIZE] = [0; networking::PACKET_SIZE];
             loop {
-                let buf = network.get_packet_buffer();
-                tx.send(buf).unwrap();
+                match receive_socket.recv(&mut buf) {
+                    Ok(amt) => {
+                        if amt == networking::PACKET_SIZE {
+                            tx.send(buf);
+                        }
+                    }
+                    Err(_) => {}
+                }
             }
-        };
-    
-    let networkmode;
-    if(network.is_some()) {
-        let network = network.as_ref().unwrap();
-        networkmode = network.mode;
-        let network_thread = thread::spawn(receiving_data(network));
+        });
     }
-
-   
-    
-
     /*
     Game state setup complete.
      */
@@ -248,9 +257,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     wincan.clear();
                     wincan.copy(&loading_screen, *source, *destination);
                     wincan.present();
-                    if network.is_some() {
-                        network.as_ref().unwrap().pack_and_send_data(&mut player, &block, &network);
-                    }
                     continue 'game_loop;
                 }
 
@@ -316,30 +322,32 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         /*
         Begin Networking
          */
-        let mut remote_player = None;
-        let network_option = &network;
-        if network.is_some() {
-            let network = network.as_ref().unwrap();
-            if let Err(e) = network.pack_and_send_data(&mut player, &block, network_option) {
-                eprintln!("{}", e);
+        if multiplayer.is_some() {
+            // send
+            if send_socket.is_some() {
+                let buf = networking::pack_data(&mut player, &block, &multiplayer);
+                if let Err(e) = send_socket.as_ref().unwrap().send(&buf) {
+                    eprintln!("Failed sending game data to other player: {}", e);
+                };
             }
-            match rx.recv() {
-                Ok(network_result) =>{
-                    match network_result {
-                        Ok(mut buf) => {
-                        let player_data = networking::unpack_player_data(&mut buf).unwrap();
-                        let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
-                        let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
-                        let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-                        remote_player = Some((player_data, portal_data, block_data, wand_data));
-                        }
-                        Err(e) => {
-                            eprintln!("{}", e);
-                        }
-                    }
+
+            // try receive
+            match rx.try_recv() {
+                Ok(mut buf) =>{
+                    let player_data = networking::unpack_player_data(&mut buf).unwrap();
+                    let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+                    let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
+                    let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
+                    remote_player = Some((player_data, portal_data, block_data, wand_data));
                 }
                 Err(e) => {
-                    eprintln!("{}", e);
+                    match e {
+                        TryRecvError::Empty => {}
+                        TryRecvError::Disconnected => {
+                            eprintln!("{}", e);
+                            break 'game_loop;
+                        }
+                    }
                 }
             }
         }
@@ -380,7 +388,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
         // create the portals
         if remote_player.is_some() {
-            let network = network.as_ref().unwrap();
+            let network = multiplayer.as_ref().unwrap();
             match network.mode {
                 networking::Mode::MultiplayerPlayer1 => {
                     if event_pump.mouse_state().left() {
@@ -442,7 +450,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
 
         wincan.copy(&castle_bg, None, None).ok();
 
-        draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider, &network, &remote_player_collider);
+        draw_level_cleared_door(&mut wincan, &door_sheet, &player, &door_collider, &multiplayer, &remote_player_collider);
         // draw_collision_boxes(&mut wincan, &player1);
         // draw the surfaces
         for obj in level.iter() {
@@ -482,7 +490,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             }
         }
 
-        render_player(&p1sprite, &mut wincan, &mut player, &network)?;
+        render_player(&p1sprite, &mut wincan, &mut player, &multiplayer)?;
         match remote_player {
             Some(_) => {
                 let player_data = remote_player.unwrap().0;
@@ -512,7 +520,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             Some(_) => {
                 let wand_data = remote_player.unwrap().3;
                 let player_data = remote_player.unwrap().0;
-                let network = network.as_ref().unwrap();
+                let network = multiplayer.as_ref().unwrap();
                 match network.mode {
                     networking::Mode::MultiplayerPlayer1 => {
                         wincan.copy_ex(&bluewand , None, Rect::new(player.physics.x() as i32 + player.portal.wand_x(), player.physics.y() as i32 + player.portal.wand_y(), 100, 20), player.portal.next_rotation(event_pump.mouse_state().x(), event_pump.mouse_state().y()).into(), None, false, false)?;
@@ -579,7 +587,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     Ok(())
 }
 
-fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, network: &Option<Network>) -> Result<(), String>{
+fn render_player(texture: &Texture, wincan: &mut WindowCanvas, player1: &mut Player, network: &Option<Multiplayer>) -> Result<(), String>{
     let pos_rect = player1.physics.position_rect();
     let pos_rect = Rect::new(pos_rect.0, pos_rect.1, pos_rect.2, pos_rect.3);
     wincan.copy_ex(&texture, player1.anim.next_anim(network), pos_rect, 0.0, None, player1.flip_horizontal, false)
@@ -644,7 +652,7 @@ fn draw_gate(wincan: &mut WindowCanvas, sprite: &Texture, platecon: PlateControl
 }
 
 
-fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player, door_collider: &RectCollider, network: &Option<Network>, remote_collider: &RectCollider) {
+fn draw_level_cleared_door(wincan: &mut WindowCanvas, door_sheet: &Texture, player: &Player, door_collider: &RectCollider, network: &Option<Multiplayer>, remote_collider: &RectCollider) {
     let pos = Rect::new((1280 - DOORW) as i32, (720 - 64 - DOORH) as i32, DOORW, DOORH);
     let src: Rect;
     if network.is_some() {
