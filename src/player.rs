@@ -7,6 +7,7 @@ use crate::plate_controller::PlateController;
 pub struct Player {
     pub physics: PhysicsController,
     pub collider: RectCollider,
+    pub temp_collider: RectCollider,
     pub anim: AnimController,
     pub portal: PortalController,
     dead: bool,
@@ -20,6 +21,7 @@ impl Player {
         Player {
             physics: _physics,
             collider: _collider,
+            temp_collider: _collider,
             anim: _anim,
             portal: _portal,
             dead: false,
