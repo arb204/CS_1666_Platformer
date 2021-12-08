@@ -25,6 +25,7 @@ use crate::object_controller::ObjectController;
 use crate::plate_controller::PlateController;
 use crate::credits;
 use crate::networking::Multiplayer;
+use crate::remote_player::RemotePlayer;
 
 const TILE_SIZE: u32 = 64;
 // const BACKGROUND: Color = Color::RGBA(0, 128, 128, 255);
@@ -76,7 +77,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         64 * 2,
         64 * 2,
     );
-    let loading_duration: f32 = 2.0;
+    let loading_duration: f32 = 3.5;
     let intervals = (1..13).map(|i| (loading_duration / 12 as f32) * i as f32);
     let loading_clock: Vec<(f32, Rect, Rect)> = intervals
         .zip(source)
@@ -182,7 +183,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
     /*
     Networking setup
      */
-    let mut remote_player = None;
+    let mut remote_player: Option<RemotePlayer> = None;
     let mut send_socket: Option<UdpSocket> = None;
     let (tx, rx) = mpsc::channel();
     // let mut network_buffer: [u8; networking::PACKET_SIZE] = [0; networking::PACKET_SIZE];
@@ -238,7 +239,15 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     if block.carried {
                         block.put_down();
                     } else if player.collider.is_touching(&block.collider()) {
-                        block.picked_up(&player);
+                        if remote_player.is_some() {
+                            let block_data = remote_player.unwrap().block_data;
+                            let carried_by_remote_player = block_data.2;
+                            if !carried_by_remote_player {
+                                block.picked_up(&player);
+                            }
+                        } else {
+                            block.picked_up(&player);
+                        }
                     }
                 },
                 Event::KeyDown { keycode: Some(Keycode::R), .. } =>
@@ -278,7 +287,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     wincan.present();
                     continue 'game_loop;
                 }
-
             }
             if current_level == final_level { break 'game_loop; }
             player.reset_colliders();
@@ -374,7 +382,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
                     let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
                     let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-                    remote_player = Some((player_data, portal_data, block_data, wand_data));
+                    remote_player = Some(RemotePlayer {player_data, portal_data, block_data, wand_data});
                 }
                 Err(e) => {
                     match e {
@@ -409,7 +417,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         }
 
         player.update(platecon);
-        block.update(&player);
+        block.update(&player, remote_player);
         platecon.update_plate(block.collider());
 
         // do we need to flip the player?
@@ -430,7 +438,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     if event_pump.mouse_state().left() {
                         player.portal.open_portal(0);
                     }
-                    let remote_portal = remote_player.unwrap().1;
+                    let remote_portal = remote_player.unwrap().portal_data;
                     if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
                         player.portal.portals[1].open(remote_portal.0, remote_portal.1, remote_portal.2);
                     }
@@ -439,7 +447,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     if event_pump.mouse_state().left() {
                         player.portal.open_portal(1);
                     }
-                    let remote_portal = remote_player.unwrap().1;
+                    let remote_portal = remote_player.unwrap().portal_data;
                     if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
                         player.portal.portals[0].open(remote_portal.0, remote_portal.1, remote_portal.2);
                     }
@@ -461,8 +469,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 }
             }
         }
+        /*
+        Level cleared Logic
+         */
         if remote_player.is_some() {
-            let remote_player = remote_player.unwrap().0;
+            let remote_player = remote_player.unwrap().player_data;
             remote_player_collider = RectCollider::new(remote_player.0, remote_player.1, 69.0, 98.0);
             if level_cleared_time.is_none() && player.collider.is_touching(&door_collider) && remote_player_collider.is_touching(&door_collider) {
                 level_cleared_time = Some(Instant::now());
@@ -515,21 +526,12 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             }
         }
 
-        match remote_player {
-            None => {
-                draw_block(&mut wincan, &block, &block_texture);
-            },
-            Some(_) => {
-                let block_data = remote_player.unwrap().2;
-                wincan.set_draw_color(Color::RGBA(255, 0, 0, 255));
-                wincan.copy(&block_texture, None, Rect::new(block_data.0, block_data.1, TILE_SIZE / 2, TILE_SIZE / 2)).ok();
-            }
-        }
+        draw_block(&mut wincan, &block, &block_texture);
 
         render_player(&p1sprite, &mut wincan, &mut player, &multiplayer)?;
         match remote_player {
             Some(_) => {
-                let player_data = remote_player.unwrap().0;
+                let player_data = remote_player.unwrap().player_data;
                 let player_pos: (f32, f32) = (player_data.0, player_data.1);
                 let flip: bool = player_data.2;
                 let anim_rect = Rect::new(
@@ -554,8 +556,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         //Wand Rendering
         match remote_player {
             Some(_) => {
-                let wand_data = remote_player.unwrap().3;
-                let player_data = remote_player.unwrap().0;
+                let wand_data = remote_player.unwrap().wand_data;
+                let player_data = remote_player.unwrap().player_data;
                 let network = multiplayer.as_ref().unwrap();
                 match network.mode {
                     networking::Mode::MultiplayerPlayer1 => {

@@ -1,6 +1,8 @@
 //ObjectController: controls physics and collision for carryable objects (UNFINISHED)
 use crate::rect_collider::RectCollider;
 use crate::player::Player;
+use crate::remote_player::RemotePlayer;
+
 pub struct ObjectController {
     collider: RectCollider,
     obstacles: Vec<RectCollider>,
@@ -62,7 +64,7 @@ impl ObjectController {
         self.start_y = y;
     }
 
-    pub fn update(&mut self, player: &Player) {
+    pub fn update(&mut self, player: &Player, remote_player: Option<RemotePlayer>) {
         if self.new_level {
             self.new_level = false;
             self.carried = false;
@@ -70,12 +72,19 @@ impl ObjectController {
             self.collider.set_x(self.start_x);
             self.collider.set_y(self.start_y);
         }
-        
+        if remote_player.is_some() {
+            let block_data = remote_player.unwrap().block_data;
+            let remote_player_data = remote_player.unwrap().player_data;
+            let carried = block_data.2;
+            if carried {
+                self.collider.set_x((remote_player_data.0-self.offset.0) as f32);
+                self.collider.set_y((remote_player_data.1-self.offset.1) as f32);
+            }
+        }
         if self.carried {
             self.collider.set_x((player.collider.x()-self.offset.0) as f32);
             self.collider.set_y((player.collider.y()-self.offset.1) as f32);
-        }
-        else if self.in_air {
+        } else if self.in_air {
             self.fall_speed += 1.0;
             let predict = RectCollider::new(self.x() as f32, self.y() as f32 + self.fall_speed(), self.collider.width(), self.collider.height());
             let mut ground = 721.0;
