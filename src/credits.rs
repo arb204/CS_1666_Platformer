@@ -87,7 +87,6 @@ pub(crate) fn show_credits(mut wincan: WindowCanvas, mut event_pump: sdl2::Event
                     wincan.copy(&loading_screen, *source, *destination);
                     wincan.present();
                 }
-
             }
         }
     }

@@ -4,4 +4,5 @@ pub struct RemotePlayer {
     pub portal_data: (f32, f32, f32),
     pub block_data: (i32, i32, bool),
     pub wand_data: (i32, i32, f32),
+    pub potion_data: (f32, f32, f32, i32),
 }

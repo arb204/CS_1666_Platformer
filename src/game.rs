@@ -299,7 +299,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                         let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
                         let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
                         let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-                        remote_player = Some(RemotePlayer{player_data, portal_data, block_data, wand_data});
+                        let potion_data: (f32, f32, f32, i32) = networking::unpack_potion_data(&mut buf);
+                        remote_player = Some(RemotePlayer {player_data, portal_data, block_data, wand_data, potion_data });
                     }
                     Err(e) => {
                         match e {
@@ -406,7 +407,8 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
                     let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
                     let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-                    remote_player = Some(RemotePlayer {player_data, portal_data, block_data, wand_data});
+                    let potion_data: (f32, f32, f32, i32) = networking::unpack_potion_data(&mut buf);
+                    remote_player = Some(RemotePlayer {player_data, portal_data, block_data, wand_data, potion_data });
                 }
                 Err(e) => {
                     match e {
@@ -460,7 +462,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
             match network.mode {
                 networking::Mode::MultiplayerPlayer1 => {
                     if event_pump.mouse_state().left() {
-                        player.portal.open_portal(0);
+                        if throwing_portal {
+                            player.portal.throw_potion(0, event_pump.mouse_state().x(), event_pump.mouse_state().y());
+                        } else {
+                            player.portal.open_portal(0);
+                        }
                     }
                     let remote_portal = remote_player.unwrap().portal_data;
                     if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
@@ -469,7 +475,11 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 },
                 networking::Mode::MultiplayerPlayer2 => {
                     if event_pump.mouse_state().left() {
-                        player.portal.open_portal(1);
+                        if throwing_portal {
+                            player.portal.throw_potion(1, event_pump.mouse_state().x(), event_pump.mouse_state().y());
+                        } else {
+                            player.portal.open_portal(1);
+                        }
                     }
                     let remote_portal = remote_player.unwrap().portal_data;
                     if remote_portal.0 != 0.0 && remote_portal.1 != 0.0 {
@@ -598,7 +608,24 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         }
 
         // render potions as they fly through the air
-        let potion_state = player.portal.get_potion_state();
+        if remote_player.is_some() {
+            let potion_data = remote_player.unwrap().potion_data;
+            if potion_data.3 == 0 || potion_data.3 == 1 {
+                let mut source = Rect::new(0, 0, 1, 1);
+                match potion_data.3 {
+                    0 => { source = Rect::new(417, 0, 417, 417); }
+                    1 => { source = Rect::new(0, 0, 417, 417); }
+                    _ => {}
+                }
+                let x = potion_data.0;
+                let y = potion_data.1;
+                let r = potion_data.2;
+                let r = r as f64;
+                wincan.copy_ex(&potionsprite, source, Rect::new((x-12.5) as i32, (y-12.5) as i32, 25, 25), r, None, false, false)?;
+            }
+        }
+      
+        let mut potion_state = player.portal.get_potion_state();
         if potion_state.0.is_some() {
             let p0state = potion_state.0.unwrap();
             let p0x = p0state.0;
