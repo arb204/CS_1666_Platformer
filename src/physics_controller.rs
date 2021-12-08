@@ -236,14 +236,14 @@ impl PhysicsController {
     pub fn dash(&mut self, speed: f32, first_press: i8) {
         self.gravity = 0.0;
         self.fall_speed = 0.0;
-        if(first_press == 1) {
+        if first_press == 1 {
             self.pre_dash_speed = speed;
         }
 
-        if(self.curr_direction == 1) {
+        if self.curr_direction == 1 {
             self.speed = 32.0;
         }
-        else if(self.curr_direction == 0) {
+        else if self.curr_direction == 0 {
             self.speed = -32.0;
         }
     }
