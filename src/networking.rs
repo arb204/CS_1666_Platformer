@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::player::Player;
 use crate::object_controller::ObjectController;
 
-pub const PACKET_SIZE: usize = 64;
+pub const PACKET_SIZE: usize = 80;
 const DEBUG: bool = false;
 
 #[derive(Copy, Clone)]
@@ -69,8 +69,11 @@ impl Multiplayer {
     }
 }
 
-pub fn pack_data(player: &mut Player, block: &ObjectController, multiplayer: &Option<Multiplayer>,
-    ) -> Vec<u8> {
+pub fn pack_data(
+    player: &mut Player,
+    block: &ObjectController,
+    multiplayer: &Option<Multiplayer>,
+) -> Vec<u8> {
 
     //Player Information
     let player_xpos = player.physics.x().to_le_bytes();
@@ -112,6 +115,21 @@ pub fn pack_data(player: &mut Player, block: &ObjectController, multiplayer: &Op
     let wand_y: [u8; 4] = player.portal.wand_y().to_le_bytes();
     let wand_rotation: [u8; 4] = player.portal.rotation().to_le_bytes();
 
+    // Potion Information
+    let potion_state = player.portal.get_potion_state();
+    let which_potion: i32 = if potion_state.0.is_some() { 0 } else if potion_state.1.is_some() { 1 } else { 2 };
+    let (x, y, r) =
+        match which_potion {
+            0 => { potion_state.0.unwrap() },
+            1 => { potion_state.1.unwrap() },
+            _ => {(0 as f32, 0 as f32, 0 as f64)}
+        };
+    let r = r as f32;
+    let potion_x: [u8; 4] = x.to_le_bytes();
+    let potion_y: [u8; 4] = y.to_le_bytes();
+    let potion_rotation: [u8; 4] = r.to_le_bytes();
+    let which_potion: [u8; 4] = which_potion.to_le_bytes();
+
     let buf = [
         player_xpos,
         player_ypos,
@@ -129,6 +147,10 @@ pub fn pack_data(player: &mut Player, block: &ObjectController, multiplayer: &Op
         wand_x,
         wand_y,
         wand_rotation,
+        potion_x,
+        potion_y,
+        potion_rotation,
+        which_potion,
     ].concat();
     if DEBUG { println!("{:?}", &buf); }
 
@@ -280,4 +302,33 @@ pub(crate) fn unpack_wand_data(buf: &mut [u8; PACKET_SIZE]) -> (i32, i32, f32) {
     let wand_rot = f32::from_le_bytes(wand_rot);
 
     (wand_x, wand_y, wand_rot)
+}
+
+pub(crate) fn unpack_potion_data(buf: &mut [u8; PACKET_SIZE]) -> (f32, f32, f32, i32) {
+    let mut potion_x: [u8; 4] = [0; 4];
+    for i in 64..68 {
+        potion_x[i-64] = buf[i];
+    }
+
+    let mut potion_y: [u8; 4] = [0; 4];
+    for i in 68..72 {
+        potion_y[i-68] = buf[i];
+    }
+
+    let mut potion_rot: [u8; 4] = [0; 4];
+    for i in 72..76 {
+        potion_rot[i-72] = buf[i];
+    }
+
+    let mut potion_state: [u8; 4] = [0; 4];
+    for i in 76..80 {
+        potion_state[i-76] = buf[i];
+    }
+
+    let potion_x = f32::from_le_bytes(potion_x);
+    let potion_y = f32::from_le_bytes(potion_y);
+    let potion_rot = f32::from_le_bytes(potion_rot);
+    let potion_state = i32::from_le_bytes(potion_state);
+
+    (potion_x, potion_y, potion_rot, potion_state)
 }
