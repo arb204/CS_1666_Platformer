@@ -199,9 +199,14 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                     Ok(amt) => {
                         if amt == networking::PACKET_SIZE {
                             tx.send(buf);
+                        } else {
+                            eprintln!("Expected to receive {} bytes, Instead received {} bytes",
+                            networking::PACKET_SIZE, amt);
                         }
                     }
-                    Err(_) => {}
+                    Err(e) => {
+                        eprintln!("{}", e);
+                    }
                 }
             }
         });
@@ -294,7 +299,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                         let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
                         let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
                         let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
-                        remote_player = Some((player_data, portal_data, block_data, wand_data));
+                        remote_player = Some(RemotePlayer{player_data, portal_data, block_data, wand_data});
                     }
                     Err(e) => {
                         match e {
@@ -305,17 +310,6 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                             }
                         }
                     }
-                }
-            }
-
-            for frame in &loading_clock {
-                let (interval, source, destination) = frame;
-                if time.elapsed() < Duration::from_secs_f32(*interval) {
-                    wincan.set_draw_color(Color::BLACK);
-                    wincan.clear();
-                    wincan.copy(&loading_screen, *source, *destination);
-                    wincan.present();
-                    continue 'game_loop;
                 }
             }
             if current_level == final_level { break 'game_loop; }
