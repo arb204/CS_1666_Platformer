@@ -77,7 +77,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         64 * 2,
         64 * 2,
     );
-    let loading_duration: f32 = 3.5;
+    let loading_duration: f32 = 4.0;
     let intervals = (1..13).map(|i| (loading_duration / 12 as f32) * i as f32);
     let loading_clock: Vec<(f32, Rect, Rect)> = intervals
         .zip(source)
@@ -278,6 +278,36 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         Move to next level
          */
         if let Some(time) = level_cleared_time {
+            if multiplayer.is_some() {
+                // send
+                if send_socket.is_some() {
+                    let buf = networking::pack_data(&mut player, &block, &multiplayer);
+                    if let Err(e) = send_socket.as_ref().unwrap().send(&buf) {
+                        eprintln!("Failed sending game data to other player: {}", e);
+                    };
+                }
+
+                // try receive
+                match rx.try_recv() {
+                    Ok(mut buf) =>{
+                        let player_data = networking::unpack_player_data(&mut buf).unwrap();
+                        let portal_data: (f32, f32, f32) = networking::unpack_portal_data(&mut buf);
+                        let block_data: (i32, i32, bool) = networking::unpack_block_data(&mut buf);
+                        let wand_data: (i32, i32, f32) = networking::unpack_wand_data(&mut buf);
+                        remote_player = Some((player_data, portal_data, block_data, wand_data));
+                    }
+                    Err(e) => {
+                        match e {
+                            TryRecvError::Empty => {}
+                            TryRecvError::Disconnected => {
+                                eprintln!("{}", e);
+                                break 'game_loop;
+                            }
+                        }
+                    }
+                }
+            }
+
             for frame in &loading_clock {
                 let (interval, source, destination) = frame;
                 if time.elapsed() < Duration::from_secs_f32(*interval) {
