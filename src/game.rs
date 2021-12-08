@@ -198,7 +198,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
                 match receive_socket.recv(&mut buf) {
                     Ok(amt) => {
                         if amt == networking::PACKET_SIZE {
-                            tx.send(buf);
+                            tx.send(buf).ok();
                         } else {
                             eprintln!("Expected to receive {} bytes, Instead received {} bytes",
                             networking::PACKET_SIZE, amt);
@@ -598,7 +598,7 @@ pub(crate) fn run(mut wincan: WindowCanvas, mut event_pump: sdl2::EventPump,
         }
 
         // render potions as they fly through the air
-        let mut potion_state = player.portal.get_potion_state();
+        let potion_state = player.portal.get_potion_state();
         if potion_state.0.is_some() {
             let p0state = potion_state.0.unwrap();
             let p0x = p0state.0;
