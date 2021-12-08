@@ -107,6 +107,6 @@ pub fn get_offset(inner: RectCollider, outer: RectCollider) -> (f32, f32) {
     let y = outer.y() - inner.y();
     let mut x = 0.0;
     if inner.x() < outer.x() && outer.contains_point(inner.x(), inner.y()) { x = 0.0; }
-    else if inner.x() > outer.x() && outer.contains_point(inner.x(), inner.y()) { x = outer.width() - 32.0*3.0; }
+    else if inner.x() > outer.x() && outer.contains_point(inner.x(), inner.y()) { x = 32.00 - outer.width(); }
     (x as f32, y as f32)
 }
